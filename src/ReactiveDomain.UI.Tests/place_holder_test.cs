@@ -7,7 +7,7 @@ namespace ReactiveDomain.UI.Tests
     {
         [Fact(Skip = "placeholder")]
         public void not_a_test() {
-            throw new NotImplementedException();
+           Assert.True(true);
         }
     }
 }
