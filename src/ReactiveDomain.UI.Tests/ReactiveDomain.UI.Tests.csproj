@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <Import Project="../ci.build.imports" />
   <PropertyGroup>
     <TargetFrameworks>$(TestTargetFrameworks)</TargetFrameworks>
@@ -11,5 +10,8 @@
     <PackageReference Include="xunit.runner.console" Version="2.4.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" Condition="'$(TargetFramework)'!='netstandard2.0'" />
     <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ReactiveDomain.Messaging\ReactiveDomain.Messaging.csproj" />
   </ItemGroup>
 </Project>
