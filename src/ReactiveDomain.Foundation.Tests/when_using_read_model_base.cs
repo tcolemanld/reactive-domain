@@ -100,18 +100,18 @@ namespace ReactiveDomain.Foundation.Tests {
         [Fact]
         public void can_wait_for_one_stream_to_go_live() {
             Start(_stream1, null, true);
-            Assert.Equal(10, Count);
-            Assert.Equal(20, Sum);
+            AssertEx.IsOrBecomesTrue(() => Count == 10, 100, msg: $"Expected 10 got {Count}");
+            AssertEx.IsOrBecomesTrue(() => Sum == 20, 100);
         }
         [Fact]
         public void can_wait_for_two_streams_to_go_live() {
             Start(_stream1, null, true);
-            AssertEx.IsOrBecomesTrue(() => Count == 10, 10, msg: $"Expected 10 got {Count}");
-            AssertEx.IsOrBecomesTrue(() => Sum == 20, 10);
+            AssertEx.IsOrBecomesTrue(() => Count == 10, 100, msg: $"Expected 10 got {Count}");
+            AssertEx.IsOrBecomesTrue(() => Sum == 20, 100);
 
             Start(_stream2, null, true);
             AssertEx.IsOrBecomesTrue(() => Count == 20, 10, msg: $"Expected 20 got {Count}");
-            AssertEx.IsOrBecomesTrue(() => Sum == 50, 10);
+            AssertEx.IsOrBecomesTrue(() => Sum == 50, 100);
         }
         [Fact]
         public void can_listen_to_one_stream() {

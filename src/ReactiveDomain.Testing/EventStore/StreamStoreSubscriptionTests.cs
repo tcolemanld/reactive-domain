@@ -20,7 +20,7 @@ namespace ReactiveDomain.Testing.EventStore {
         public StreamStoreSubscriptionTests(StreamStoreConnectionFixture fixture) {
             _admin = fixture.AdminCredentials;
             _streamNameBuilder = new PrefixedCamelCaseStreamNameBuilder("UnitTest");
-            var mockStreamStore = new MockStreamStoreConnection("Test");
+            var mockStreamStore = new MockStreamStoreConnection(nameof(MockStreamStoreConnection));
             mockStreamStore.Connect();
             fixture.Connection.Connect();
             _stores.Add(mockStreamStore);
@@ -32,7 +32,7 @@ namespace ReactiveDomain.Testing.EventStore {
                 AppendEvents(eventCount, store, _streamName);
             }
 
-           
+
         }
         private void AppendEvents(int numEventsToBeSent, IStreamStoreConnection conn, string streamName, int startNumber = 0) {
             for (int evtNumber = startNumber; evtNumber < numEventsToBeSent + startNumber; evtNumber++) {
@@ -116,7 +116,7 @@ namespace ReactiveDomain.Testing.EventStore {
                 _streamNameBuilder.GenerateForAggregate(typeof(TestAggregate), Guid.NewGuid()),
                 _streamNameBuilder.GenerateForAggregate(typeof(TestWoftamAggregate), Guid.NewGuid())
             };
-            
+
             foreach (var conn in _stores) {
 
 
@@ -177,19 +177,23 @@ namespace ReactiveDomain.Testing.EventStore {
                 AssertEx.IsOrBecomesTrue(() => dropped, msg: "Failed to handle drop");
             }
         }
+        public class STestCategoryAggregate : EventDrivenStateMachine { }
         [Fact]
         public void can_subscribe_to_category_stream() {
-            var streamTypeName = _streamNameBuilder.GenerateForCategory(typeof(TestAggregate));
-            var streams = new List<string>
+            var streamTypeName = _streamNameBuilder.GenerateForCategory(typeof(STestCategoryAggregate));
+            var streams = new []
             {
-                _streamNameBuilder.GenerateForAggregate(typeof(TestAggregate), Guid.NewGuid()),
-                _streamNameBuilder.GenerateForAggregate(typeof(TestAggregate), Guid.NewGuid())
+                _streamNameBuilder.GenerateForAggregate(typeof(STestCategoryAggregate), Guid.NewGuid()),
+                _streamNameBuilder.GenerateForAggregate(typeof(STestCategoryAggregate), Guid.NewGuid())
             };
 
             foreach (var conn in _stores) {
                 long evtCount = 0;
                 var dropped = false;
-
+                foreach (var stream in streams) {
+                    AppendEvents(1, conn, stream);
+                }
+                Thread.Sleep(250);
                 var sub = conn.SubscribeToStream(
                     streamTypeName,
                     // ReSharper disable once AccessToModifiedClosure
@@ -197,18 +201,19 @@ namespace ReactiveDomain.Testing.EventStore {
                     (reason, ex) => dropped = true,
                     _admin);
 
-                foreach (var stream in streams) {
-                    AppendEvents(5, conn, stream);
-                }
-                AssertEx.IsOrBecomesTrue(() => Interlocked.Read(ref evtCount) == 10, 2000, $"Expected 10 got {Interlocked.Read(ref evtCount)}");
+
+                AppendEvents(5, conn, streams[0]);
+                AppendEvents(5, conn, streams[1]);
+
+                AssertEx.IsOrBecomesTrue(() => Interlocked.Read(ref evtCount) == 10, 2000,
+                    $"Expected 10 got {Interlocked.Read(ref evtCount)} on {conn.ConnectionName}");
                 sub.Dispose();
                 AssertEx.IsOrBecomesTrue(() => dropped, msg: "Failed to handle drop");
             }
         }
-        public class StreamCreatedTestEvent : Event
-        {
-            public StreamCreatedTestEvent():base(NewRoot()) {
-                
+        public class StreamCreatedTestEvent : Event {
+            public StreamCreatedTestEvent() : base(NewRoot()) {
+
             }
         }
         public class SubscriptionTestEvent : Event {
