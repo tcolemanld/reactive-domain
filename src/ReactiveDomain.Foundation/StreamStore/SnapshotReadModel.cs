@@ -34,7 +34,7 @@ namespace ReactiveDomain.Foundation.EventStore {
         public abstract ReadModelState GetState();
 
         private bool _disposed;
-        protected virtual void Dispose(bool disposing) {
+        protected override void Dispose(bool disposing) {
             if (_disposed) return;
             _disposed = true;
             if (disposing) {
