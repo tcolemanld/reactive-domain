@@ -2,6 +2,7 @@
 using ReactiveDomain.Messaging;
 using ReactiveDomain.Messaging.Bus;
 using ReactiveDomain.Testing;
+using ReactiveDomain.Testing.EventStore;
 using Xunit;
 
 namespace ReactiveDomain.Foundation.Tests {
@@ -32,6 +33,7 @@ namespace ReactiveDomain.Foundation.Tests {
 
         public when_using_read_model_base(StreamStoreConnectionFixture fixture)
                     : base(nameof(when_using_read_model_base), GetListener) {
+            //_conn = new MockStreamStoreConnection("mockStore");
             _conn = fixture.Connection;
             _conn.Connect();
 
@@ -188,6 +190,7 @@ namespace ReactiveDomain.Foundation.Tests {
         }
         [Fact]
         public void can_listen_to_the_same_stream_twice() {
+            Assert.Equal(0,Count);
             //weird but true
             //n.b. Don't do this on purpose
             Start(_stream1);
@@ -197,13 +200,13 @@ namespace ReactiveDomain.Foundation.Tests {
             AssertEx.IsOrBecomesTrue(() => Sum == 40);
             //even more doubled events
             AppendEvents(10, _conn, _stream1, 5);
-            AssertEx.IsOrBecomesTrue(() => Count == 40, 1000, msg: $"Expected 20 got {Count}");
+            AssertEx.IsOrBecomesTrue(() => Count == 40, 2000, msg: $"Expected 40 got {Count}");
             AssertEx.IsOrBecomesTrue(() => Sum == 140);
         }
 
         public long Sum { get; private set; }
         public long Count { get; private set; }
-        public void Handle(ReadModelTestEvent @event) {
+        void IHandle<ReadModelTestEvent>.Handle(ReadModelTestEvent @event) {
             Sum += @event.Value;
             Count++;
         }

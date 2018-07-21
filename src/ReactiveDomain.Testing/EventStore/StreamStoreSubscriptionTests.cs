@@ -90,7 +90,7 @@ namespace ReactiveDomain.Testing.EventStore {
 
                 var sub = conn.SubscribeToStreamFrom(
                                             streamName,
-                                            1,
+                                            2,//after the third event of 5
                                             CatchUpSubscriptionSettings.Default,
                                             // ReSharper disable once AccessToModifiedClosure
                                             evt => Interlocked.Increment(ref evtCount),
@@ -99,10 +99,11 @@ namespace ReactiveDomain.Testing.EventStore {
 
 
                 AssertEx.IsOrBecomesTrue(() => liveProcessingStarted, 2000, msg: "Failed handle live processing start");
+                AssertEx.IsOrBecomesTrue(() => Interlocked.Read(ref evtCount) == 2, 5000, msg: $"Expected 2 Events got { Interlocked.Read(ref evtCount)}");
+                Task.Run(()=> AppendEvents(5, conn, streamName));
+                AssertEx.IsOrBecomesTrue(() => Interlocked.Read(ref evtCount) == 7, 5000, msg: $"Expected 7 Events got { Interlocked.Read(ref evtCount)}");
                 AppendEvents(5, conn, streamName);
-                AssertEx.IsOrBecomesTrue(() => Interlocked.Read(ref evtCount) == 8, 5000, msg: $"Expected 3 Events got { Interlocked.Read(ref evtCount)}");
-                Task.Run(() => AppendEvents(5, conn, streamName));
-                AssertEx.IsOrBecomesTrue(() => Interlocked.Read(ref evtCount) == 13, 5000, msg: $"Expected 8 Events got { Interlocked.Read(ref evtCount)}");
+                AssertEx.IsOrBecomesTrue(() => Interlocked.Read(ref evtCount) == 12, 5000, msg: $"Expected 12 Events got { Interlocked.Read(ref evtCount)}");
                 sub.Dispose();
                 AssertEx.IsOrBecomesTrue(() => dropped, msg: "Failed to handle drop");
             }
