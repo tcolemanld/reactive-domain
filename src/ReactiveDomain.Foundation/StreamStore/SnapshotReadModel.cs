@@ -1,7 +1,8 @@
 ﻿using System;
 using ReactiveDomain.Util;
 
-namespace ReactiveDomain.Foundation.EventStore {
+// ReSharper disable once CheckNamespace
+namespace ReactiveDomain.Foundation {
     public abstract class SnapshotReadModel : ReadModelBase {
         protected ReadModelState StartingState { get; private set; }
 
