@@ -19,17 +19,14 @@ namespace ReactiveDomain.Testing {
         public MockStreamStoreConnectionTests(StreamStoreConnectionFixture fixture) {
          
             _streamNameBuilder = new PrefixedCamelCaseStreamNameBuilder("UnitTest");
-
-            // todo: uncomment this and make sure all tests pass
-
+            
             var mockStreamStore = new MockStreamStoreConnection("Test");
             _streamStoreConnections.Add(mockStreamStore);
             mockStreamStore.Connect();
             _streamStoreConnections.Add(fixture.Connection);
 
+            _repos.Add(new StreamStoreRepository(_streamNameBuilder, mockStreamStore, new JsonMessageSerializer()));
 
-            //todo: reconnect bus to the all stream subscription
-            //_repos.Add(new StreamStoreRepository(_streamNameBuilder, new MockStreamStoreConnection("Test"), new JsonMessageSerializer()));
             _repos.Add(new StreamStoreRepository(_streamNameBuilder, fixture.Connection, new JsonMessageSerializer()));
         }
        
@@ -120,7 +117,7 @@ namespace ReactiveDomain.Testing {
                 //Update & save original copy
                 tAgg.RaiseBy(6);
                 var r = repo; //copy iteration varible for closure
-                Assert.Throws<AggregateException>(() => r.Save(tAgg));
+                Assert.Throws<WrongExpectedVersionException>(() => r.Save(tAgg));
             }
         }
 
