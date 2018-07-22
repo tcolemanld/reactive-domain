@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Threading;
 using Newtonsoft.Json;
+using ReactiveDomain.Messaging;
 
-namespace ReactiveDomain.Messaging {
+namespace ReactiveDomain.Foundation.Commands {
     /// <summary>
     /// A correlated command that is optionally cancellable using a CancellationToken. 
     /// </summary>

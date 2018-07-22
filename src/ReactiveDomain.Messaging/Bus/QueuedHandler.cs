@@ -169,6 +169,20 @@ namespace ReactiveDomain.Messaging.Bus
         {
             return _queueStats.GetStatistics(_queue.Count);
         }
+        public void Dispose() {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private bool _disposed;
+        protected virtual void Dispose(bool disposing) {
+            if (_disposed)
+                return;
+            _disposed = true;
+            if (disposing) {
+                RequestStop();
+            }
+        }
     }
 }
 

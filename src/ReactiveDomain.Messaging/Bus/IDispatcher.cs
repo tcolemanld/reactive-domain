@@ -2,10 +2,10 @@
 
 namespace ReactiveDomain.Messaging.Bus
 {
-    /// <inheritdoc cref="ICommandBus"/>
+    /// <inheritdoc cref="IQueuedHandler"/>
     /// <inheritdoc cref="IBus"/>
-    public interface IDispatcher : ICommandBus, IBus, IDisposable
+    public interface IDispatcher : IQueuedHandler, IBus
     {
-        bool Idle {get;}
+       new string Name { get; }
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using ReactiveDomain.Foundation.Commands;
 using ReactiveDomain.Messaging;
 using ReactiveDomain.Messaging.Bus;
 using ReactiveUI;
@@ -70,7 +71,7 @@ namespace ReactiveDomain.Foundation.ViewObjects
         }
 
         public static ReactiveCommand BuildFireCommand(
-                                                this ICommandPublisher bus,
+                                                this ICommandSenders,
                                                 IObservable<bool> canExecute,
                                                 Func<Command> commandFunc,
                                                 IScheduler scheduler = null,
@@ -94,7 +95,7 @@ namespace ReactiveDomain.Foundation.ViewObjects
         }
 
         public static ReactiveCommand BuildFireCommand(
-                                                this ICommandPublisher bus,
+                                                this ICoICommandSender
                                                 Func<Command> commandFunc,
                                                 IScheduler scheduler = null,
                                                 string userErrorMsg = null,
@@ -116,8 +117,7 @@ namespace ReactiveDomain.Foundation.ViewObjects
         }
 
         public static ReactiveCommand BuildFireCommand(
-                                                this ICommandPublisher bus,
-                                                IObservable<bool> canExecute,
+                                                this ICommaICommandSender                                              IObservable<bool> canExecute,
                                                 IEnumerable<Func<Command>> commands,
                                                 IScheduler scheduler = null,
                                                 string userErrorMsg = null,
@@ -141,8 +141,7 @@ namespace ReactiveDomain.Foundation.ViewObjects
         }
 
         public static ReactiveCommand BuildFireCommand(
-                                                this ICommandPublisher bus,
-                                                IEnumerable<Func<Command>> commands,
+                                                this ICommandSICommandSender                                           IEnumerable<Func<Command>> commands,
                                                 IScheduler scheduler = null,
                                                 string userErrorMsg = null,
                                                 TimeSpan? responseTimeout = null,
@@ -163,8 +162,7 @@ namespace ReactiveDomain.Foundation.ViewObjects
         }
 
         private static ReactiveCommand FireCommands(
-                    ICommandPublisher bus,
-                    IEnumerable<Func<Command>> commands,
+                    ICommandSendICommandSender            IEnumerable<Func<Command>> commands,
                     IObservable<bool> canExecute = null,
                     IScheduler scheduler = null,
                     string userErrorMsg = null,

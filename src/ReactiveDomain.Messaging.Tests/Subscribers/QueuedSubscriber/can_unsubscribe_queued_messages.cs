@@ -8,7 +8,7 @@ namespace ReactiveDomain.Messaging.Tests.Subscribers.QueuedSubscriber {
     // ReSharper disable once InconsistentNaming
     public sealed class can_unsubscribe_queued_messages {
 
-        private readonly IDispatcher _bus = new Dispatcher("test", 3);
+        private readonly IDispatcher _bus = new Dispatcher("test");
         private int _msgCount = 20;
         private readonly List<Message> _messages = new List<Message>();
         private int _messageCount;
@@ -39,14 +39,15 @@ namespace ReactiveDomain.Messaging.Tests.Subscribers.QueuedSubscriber {
                 AssertEx.IsOrBecomesTrue(() => _messageCount == _msgCount);
                 AssertEx.IsOrBecomesTrue(() => _eventCount == _msgCount);
 
-            }
+            } //subscriber is disposed here 
             
             for (int i = 0; i < _msgCount; i++) {
                 _bus.Publish(_messages[i]);
             }
-
+            //counts do not increment
             Assert.True(_messageCount == _msgCount);
             Assert.True(_eventCount == _msgCount);
+
         }
     }
 }

@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Threading;
-using Newtonsoft.Json;
-using ReactiveDomain.Messaging.Bus;
+using ReactiveDomain.Messaging;
 
-namespace ReactiveDomain.Messaging
+namespace ReactiveDomain.Foundation.Commands
 {
     public abstract class CommandResponse : CorrelatedMessage
     {

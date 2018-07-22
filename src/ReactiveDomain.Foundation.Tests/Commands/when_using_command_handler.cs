@@ -2,11 +2,13 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
+using ReactiveDomain.Foundation.Commands;
+using ReactiveDomain.Messaging;
 using ReactiveDomain.Messaging.Bus;
 using ReactiveDomain.Testing;
 using Xunit;
 
-namespace ReactiveDomain.Messaging.Tests {
+namespace ReactiveDomain.Foundation.Tests.Commands {
 
     // ReSharper disable once InconsistentNaming
     public sealed class when_using_command_handler :

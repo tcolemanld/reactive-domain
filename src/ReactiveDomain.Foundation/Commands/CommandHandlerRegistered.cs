@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using ReactiveDomain.Messaging;
 
-namespace ReactiveDomain.Messaging.Bus {
+namespace ReactiveDomain.Foundation.Commands {
     public class CommandHandlerRegistered : Message {
         public readonly string Name;
         public readonly Guid HandlerId;

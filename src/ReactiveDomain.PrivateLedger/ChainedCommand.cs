@@ -1,4 +1,5 @@
 using System;
+using ReactiveDomain.Foundation.Commands;
 using ReactiveDomain.Messaging;
 using ReactiveDomain.Messaging.Messages;
 

@@ -1,4 +1,5 @@
 ﻿using System.Threading;
+using ReactiveDomain.Foundation.Commands;
 using ReactiveDomain.Messaging;
 using ReactiveDomain.Messaging.Bus;
 

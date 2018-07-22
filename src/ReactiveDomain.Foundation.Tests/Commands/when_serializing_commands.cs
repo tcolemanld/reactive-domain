@@ -6,11 +6,12 @@ using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Bson;
 using Newtonsoft.Json.Serialization;
-using ReactiveDomain.Messaging.Bus;
+using ReactiveDomain.Foundation.Commands;
+using ReactiveDomain.Messaging;
 using ReactiveDomain.Testing;
 using Xunit;
 
-namespace ReactiveDomain.Messaging.Tests {
+namespace ReactiveDomain.Foundation.Tests.Commands {
     public class when_serializing_commands {
         [Fact]
         public void can_serialize_bson_success_commandresponse() {
@@ -19,7 +20,7 @@ namespace ReactiveDomain.Messaging.Tests {
             TestCommands.TestResponse farSide;
             var ms = new MemoryStream();
             using (var writer = new BsonDataWriter(ms)) {
-                var serializer = JsonSerializer.Create(Json.JsonSettings);
+                var serializer = JsonSerializer.Create(Messaging.Json.JsonSettings);
                 serializer.Serialize(writer, nearSide);
             }
             var array = ms.ToArray();
@@ -27,14 +28,14 @@ namespace ReactiveDomain.Messaging.Tests {
             StringBuilder sb = new StringBuilder();
             StringWriter sw = new StringWriter(sb);
             using (var writer = new JsonTextWriter(sw)) {
-                var serializer = JsonSerializer.Create(Json.JsonSettings);
+                var serializer = JsonSerializer.Create(Messaging.Json.JsonSettings);
                 serializer.Serialize(writer, nearSide);
             }
 
             var ms2 = new MemoryStream(array);
 
             using (var reader = new BsonDataReader(ms2)) {
-                var serializer = JsonSerializer.Create(Json.JsonSettings);
+                var serializer = JsonSerializer.Create(Messaging.Json.JsonSettings);
                 farSide = serializer.Deserialize<TestCommands.TestResponse>(reader);
             }
 
@@ -57,12 +58,12 @@ namespace ReactiveDomain.Messaging.Tests {
             StringBuilder sb = new StringBuilder();
             StringWriter sw = new StringWriter(sb);
             using (var writer = new JsonTextWriter(sw)) {
-                var serializer = JsonSerializer.Create(Json.JsonSettings);
+                var serializer = JsonSerializer.Create(Messaging.Json.JsonSettings);
                 serializer.Serialize(writer, nearSide);
             }
 
             using (var reader = new JsonTextReader(new StringReader(sb.ToString()))) {
-                var serializer = JsonSerializer.Create(Json.JsonSettings);
+                var serializer = JsonSerializer.Create(Messaging.Json.JsonSettings);
                 serializer.SerializationBinder = new TestDeserializer();
                 serializer.ContractResolver = new TestContractResolver();
                 farSide = serializer.Deserialize<TestCommands.TestResponse>(reader);
@@ -85,7 +86,7 @@ namespace ReactiveDomain.Messaging.Tests {
             TestCommands.FailedResponse farSide;
             var ms = new MemoryStream();
             using (var writer = new BsonDataWriter(ms)) {
-                var serializer = JsonSerializer.Create(Json.JsonSettings);
+                var serializer = JsonSerializer.Create(Messaging.Json.JsonSettings);
                 serializer.Serialize(writer, nearSide);
             }
             var array = ms.ToArray();
@@ -93,14 +94,14 @@ namespace ReactiveDomain.Messaging.Tests {
             StringBuilder sb = new StringBuilder();
             StringWriter sw = new StringWriter(sb);
             using (var writer = new JsonTextWriter(sw)) {
-                var serializer = JsonSerializer.Create(Json.JsonSettings);
+                var serializer = JsonSerializer.Create(Messaging.Json.JsonSettings);
                 serializer.Serialize(writer, nearSide);
             }
 
             var ms2 = new MemoryStream(array);
 
             using (var reader = new BsonDataReader(ms2)) {
-                var serializer = JsonSerializer.Create(Json.JsonSettings);
+                var serializer = JsonSerializer.Create(Messaging.Json.JsonSettings);
                 farSide = serializer.Deserialize<TestCommands.FailedResponse>(reader);
             }
 
@@ -124,12 +125,12 @@ namespace ReactiveDomain.Messaging.Tests {
             StringBuilder sb = new StringBuilder();
             StringWriter sw = new StringWriter(sb);
             using (var writer = new JsonTextWriter(sw)) {
-                var serializer = JsonSerializer.Create(Json.JsonSettings);
+                var serializer = JsonSerializer.Create(Messaging.Json.JsonSettings);
                 serializer.Serialize(writer, nearSide);
             }
 
             using (var reader = new JsonTextReader(new StringReader(sb.ToString()))) {
-                var serializer = JsonSerializer.Create(Json.JsonSettings);
+                var serializer = JsonSerializer.Create(Messaging.Json.JsonSettings);
                 serializer.SerializationBinder = new TestDeserializer();
                 serializer.ContractResolver = new TestContractResolver();
                 farSide = serializer.Deserialize<TestCommands.FailedResponse>(reader);

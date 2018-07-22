@@ -3,6 +3,7 @@ using ReactiveDomain.Messaging;
 using ReactiveDomain.Messaging.Bus;
 using ReactiveDomain.Testing;
 using System;
+using ReactiveDomain.Foundation.Commands;
 using Xunit;
 
 namespace ReactiveDomain.Foundation.Tests.Logging

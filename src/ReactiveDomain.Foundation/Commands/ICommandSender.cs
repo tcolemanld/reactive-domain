@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace ReactiveDomain.Messaging.Bus
+namespace ReactiveDomain.Foundation.Commands
 {
-    public interface ICommandPublisher
+    public interface ICommandSender
     {
         /// <summary>
         /// Send blocks the calling thread until a command response or timeout is received

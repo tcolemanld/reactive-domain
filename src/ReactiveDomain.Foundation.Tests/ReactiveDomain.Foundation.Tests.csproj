@@ -10,11 +10,13 @@
     <None Remove="Logging\**" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Remove="Commands\when_sending_concurrent_commands.cs" />
     <Compile Remove="Domain\MetadataTests.cs" />
     <Compile Remove="Domain\MetadatumTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.1" />
     <PackageReference Include="xunit" Version="2.4.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.8.0" />
     <PackageReference Include="xunit.runner.console" Version="2.4.0" />

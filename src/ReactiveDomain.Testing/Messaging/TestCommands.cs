@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using Newtonsoft.Json;
+using ReactiveDomain.Foundation.Commands;
 using ReactiveDomain.Messaging;
 
 
@@ -101,7 +102,7 @@ namespace ReactiveDomain.Testing {
                 Data = data;
             }
         }
-        public class FailedResponse : Messaging.Fail {
+        public class FailedResponse : Foundation.Commands.Fail {
             public int Data { get; }
             public FailedResponse(
                TypedResponse sourceCommand,

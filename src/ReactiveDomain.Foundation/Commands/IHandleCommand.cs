@@ -1,4 +1,4 @@
-﻿namespace ReactiveDomain.Messaging.Bus
+﻿namespace ReactiveDomain.Foundation.Commands
 {
     public interface IHandleCommand<T> where T : Command
     {

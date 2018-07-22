@@ -3,8 +3,10 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
 using ReactiveDomain.Logging;
+using ReactiveDomain.Messaging;
+using ReactiveDomain.Messaging.Bus;
 
-namespace ReactiveDomain.Messaging.Bus {
+namespace ReactiveDomain.Foundation.Commands {
     public class CommandManager :
         QueuedSubscriber,
         IHandle<CommandResponse>,

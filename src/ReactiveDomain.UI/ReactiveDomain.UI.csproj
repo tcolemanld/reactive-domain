@@ -4,6 +4,9 @@
     <TargetFrameworks>$(LibTargetFrameworks)</TargetFrameworks>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="ViewObjects\CommandBuilder.cs" />
+  </ItemGroup>
  
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />

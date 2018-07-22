@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using ReactiveDomain.Foundation.Commands;
 using ReactiveDomain.Messaging.Bus;
 using Xunit;
 

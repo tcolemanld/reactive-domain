@@ -1,8 +1,9 @@
 using System;
 using ReactiveDomain.Logging;
+using ReactiveDomain.Messaging.Bus;
 using ReactiveDomain.Util;
 
-namespace ReactiveDomain.Messaging.Bus {
+namespace ReactiveDomain.Foundation.Commands {
     public sealed class CommandHandler<T> :
         IDisposable,
         IHandle<T> where T : Command {

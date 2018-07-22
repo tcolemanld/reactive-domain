@@ -18,7 +18,7 @@ namespace ReactiveDomain.Messaging.Tests.Subscribers.QueuedSubscriber {
 
         [Fact]
         void can_handle_threaded_messages() {
-            var bus = new Dispatcher("test",2);
+            var bus = new Dispatcher("test");
             using (var sub = new  TestSubscriber(bus) ) {
                 sub.Subscribe(
                     new AdHocHandler<CountedTestMessage>(_=> Interlocked.Increment(ref _msgCount)));

@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using ReactiveDomain.Messaging;
 
-namespace ReactiveDomain.Messaging.Bus {
-    public sealed class CommandTracker : ICommandPublisher
+namespace ReactiveDomain.Foundation.Commands {
+    public sealed class CommandTracker : ICommandSender
     {
         private Command _trackedCommand; 
         public CommandTracker() { }

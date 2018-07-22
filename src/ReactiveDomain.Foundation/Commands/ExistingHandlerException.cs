@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace ReactiveDomain.Messaging.Bus {
+namespace ReactiveDomain.Foundation.Commands {
     [Serializable]
     public class ExistingHandlerException : Exception
     {

@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Threading.Tasks;
+using ReactiveDomain.Messaging;
+using ReactiveDomain.Messaging.Bus;
 
-namespace ReactiveDomain.Messaging.Bus {
-    public class MultiQueuedPublisher : ICommandPublisher, IPublisher, IDisposable {
+namespace ReactiveDomain.Foundation.Commands {
+    public class MultiQueuedPublisher : ICommandSender, IPublisher, IDisposable {
         private readonly CommandManager _manager;
         private readonly TimeSpan? _slowMsgThreshold;
         private readonly TimeSpan? _slowCmdThreshold;

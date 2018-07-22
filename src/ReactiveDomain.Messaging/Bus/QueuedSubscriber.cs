@@ -9,13 +9,13 @@ namespace ReactiveDomain.Messaging.Bus
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
 
         private readonly QueuedHandler _messageQueue;
-        private readonly IBus _generalBus;
+        protected readonly IBus ExternalBus;
         private readonly IBus _internalBus;
         protected object Last = null;
         public bool Starving => _messageQueue.Idle;
         protected QueuedSubscriber(IBus bus, bool idempotent = false)
         {
-	        _generalBus = bus ?? throw new ArgumentNullException(nameof(bus));
+	        ExternalBus = bus ?? throw new ArgumentNullException(nameof(bus));
             _internalBus = new InMemoryBus("SubscriptionBus");
 
             if (idempotent)
@@ -35,7 +35,7 @@ namespace ReactiveDomain.Messaging.Bus
         {
             _internalBus.Subscribe<T>(handler);
             _subscriptions.Add(
-                _generalBus.Subscribe<T>(new AdHocHandler<T>(_messageQueue.Handle))
+                ExternalBus.Subscribe<T>(new AdHocHandler<T>(_messageQueue.Handle))
                               );
         }
         public void Dispose()
