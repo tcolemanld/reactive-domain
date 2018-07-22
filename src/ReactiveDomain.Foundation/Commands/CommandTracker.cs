@@ -1,38 +1,53 @@
 ﻿using System;
 using ReactiveDomain.Messaging;
+using ReactiveDomain.Messaging.Bus;
 
 namespace ReactiveDomain.Foundation.Commands {
-    public sealed class CommandTracker : ICommandSender
-    {
-        private Command _trackedCommand; 
-        public CommandTracker() { }
+    public sealed class CommandTracker :
+                                        IHandle<CommandResponse>,
+                                        IHandle<CommandTracker.AckCommand>,
+                                        IHandle<CommandTracker.AckTimeout>,
+                                        IHandle<CommandTracker.CompletionTimeout> {
+        private readonly Command _command;
+        private readonly IBus _publishBus;
+        private readonly IBus _timeoutBus;
+        private readonly TimeSpan _responseTimeout;
+        private readonly TimeSpan _ackTimeout;
 
-        #region ICommandPublisher
-        public void Send(Command command, string exceptionMsg = null, TimeSpan? responseTimeout = null, TimeSpan? ackTimeout = null) {
-            if(_trackedCommand != null) {
-                throw new InvalidOperationException("Already tracking a command");
-            }
-            _trackedCommand = command;
-
+        public CommandTracker(
+                Command command,
+                IBus publishBus,
+                IBus timeoutBus,
+                TimeSpan responseTimeout,
+                TimeSpan ackTimeout) {
+            _command = command;
+            _publishBus = publishBus;
+            _timeoutBus = timeoutBus;
+            _responseTimeout = responseTimeout;
+            _ackTimeout = ackTimeout;
+        }
+        public CommandResponse Send() {
+            return _command.Succeed();
         }
 
-        public bool TrySend(Command command, out CommandResponse response, TimeSpan? responseTimeout = null,
-                            TimeSpan? ackTimeout = null) {
-            if(_trackedCommand != null) {
-                throw new InvalidOperationException("Already tracking a command");
-            }
-            _trackedCommand = command;
-            response = null;
-            return false;
+        public CommandResponse SendAsync() {
+            return null;
+        }
+        public void Handle(AckCommand message) {
+            throw new NotImplementedException();
         }
 
-        public void SendAsync(Command command, TimeSpan? responseTimeout = null, TimeSpan? ackTimeout = null) {
-            if(_trackedCommand != null) {
-                throw new InvalidOperationException("Already tracking a command");
-            }
-            _trackedCommand = command;
+        public void Handle(CommandResponse message) {
+            throw new NotImplementedException();
         }
-        #endregion
+
+        public void Handle(AckTimeout message) {
+            throw new NotImplementedException();
+        }
+
+        public void Handle(CompletionTimeout message) {
+            throw new NotImplementedException();
+        }
 
         #region Messages
         /// <summary>
@@ -81,9 +96,14 @@ namespace ReactiveDomain.Foundation.Commands {
                 CommandId = commandId;
             }
         }
+        public class CommandComplete : Message {
+            public readonly Guid CommandId;
+            public CommandComplete(
+                Guid commandId) {
+                CommandId = commandId;
+            }
+        }
 
         #endregion
-
-        
-    }
+        }
 }

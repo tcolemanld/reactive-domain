@@ -1,5 +1,6 @@
 ﻿using System;
 using ReactiveDomain.Foundation.Commands;
+using ReactiveDomain.Messaging.Bus;
 using ReactiveDomain.Testing;
 using Xunit;
 
@@ -10,32 +11,36 @@ namespace ReactiveDomain.Foundation.Tests.Commands
     {
         [Fact]
         public void can_only_track_one_command_once() {
-            var tracker = new CommandTracker();
+            var bus = new InMemoryBus("test");
+            var manager = new CommandManager(bus);
             var cmd1 = new TestCommands.Command1();
             var cmd2 = new TestCommands.Command1();
-            tracker.Send(cmd1);
-            Assert.Throws<InvalidOperationException>(() => tracker.Send(cmd1));
-            Assert.Throws<InvalidOperationException>(() => tracker.Send(cmd2));
-            Assert.Throws<InvalidOperationException>(() => tracker.SendAsync(cmd1));
-            Assert.Throws<InvalidOperationException>(() => tracker.SendAsync(cmd2));
-            Assert.Throws<InvalidOperationException>(() => tracker.TrySend(cmd1, out _));
-            Assert.Throws<InvalidOperationException>(() => tracker.TrySend(cmd2, out _));
-            tracker = new CommandTracker();
-            tracker.TrySend(cmd1, out _);
-            Assert.Throws<InvalidOperationException>(() => tracker.Send(cmd1));
-            Assert.Throws<InvalidOperationException>(() => tracker.Send(cmd2));
-            Assert.Throws<InvalidOperationException>(() => tracker.SendAsync(cmd1));
-            Assert.Throws<InvalidOperationException>(() => tracker.SendAsync(cmd2));
-            Assert.Throws<InvalidOperationException>(() => tracker.TrySend(cmd1, out _));
-            Assert.Throws<InvalidOperationException>(() => tracker.TrySend(cmd2, out _));
-            tracker = new CommandTracker();
-            tracker.SendAsync(cmd1);
-            Assert.Throws<InvalidOperationException>(() => tracker.Send(cmd1));
-            Assert.Throws<InvalidOperationException>(() => tracker.Send(cmd2));
-            Assert.Throws<InvalidOperationException>(() => tracker.SendAsync(cmd1));
-            Assert.Throws<InvalidOperationException>(() => tracker.SendAsync(cmd2));
-            Assert.Throws<InvalidOperationException>(() => tracker.TrySend(cmd1, out _));
-            Assert.Throws<InvalidOperationException>(() => tracker.TrySend(cmd2, out _));
+            manager.Send(cmd1);
+            manager.Send(cmd2);
+            Assert.Throws<InvalidOperationException>(() => manager.Send(cmd1));
+            Assert.Throws<InvalidOperationException>(() => manager.Send(cmd2));
+            Assert.Throws<InvalidOperationException>(() => manager.SendAsync(cmd1));
+            Assert.Throws<InvalidOperationException>(() => manager.SendAsync(cmd2));
+            Assert.False(manager.TrySend(cmd1, out _));
+            Assert.False(manager.TrySend(cmd2, out _));
+            manager = new CommandManager(bus);
+            manager.TrySend(cmd1, out _);
+            manager.TrySend(cmd2, out _);
+            Assert.Throws<InvalidOperationException>(() => manager.Send(cmd1));
+            Assert.Throws<InvalidOperationException>(() => manager.Send(cmd2));
+            Assert.Throws<InvalidOperationException>(() => manager.SendAsync(cmd1));
+            Assert.Throws<InvalidOperationException>(() => manager.SendAsync(cmd2));
+            Assert.False(manager.TrySend(cmd1, out _));
+            Assert.False(manager.TrySend(cmd2, out _));
+            manager = new CommandManager(bus);
+            manager.SendAsync(cmd1);
+            manager.SendAsync(cmd2);
+            Assert.Throws<InvalidOperationException>(() => manager.Send(cmd1));
+            Assert.Throws<InvalidOperationException>(() => manager.Send(cmd2));
+            Assert.Throws<InvalidOperationException>(() => manager.SendAsync(cmd1));
+            Assert.Throws<InvalidOperationException>(() => manager.SendAsync(cmd2));
+            Assert.False(manager.TrySend(cmd1, out _));
+            Assert.False(manager.TrySend(cmd2, out _));
         }
     }
 }
