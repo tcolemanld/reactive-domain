@@ -18,18 +18,22 @@ namespace ReactiveDomain.Messaging.Bus
             _handler = handler;
         }
 
-        public void Handle(T message)
+        public void Handle(T command)
         {
-            _bus.Publish(new AckCommand(message));
+            _bus.Publish(new AckCommand(command));
             try
             {
+                if (command.IsCanceled){
+                    _bus.Publish(command.Canceled());
+                    return;
+                }
                 if (Log.LogLevel >= LogLevel.Debug)
-                    Log.Debug("{0} command handled by {1}", message.GetType().Name, _handler.GetType().Name);
-                _bus.Publish(_handler.Handle(message));
+                    Log.Debug("{0} command handled by {1}", command.GetType().Name, _handler.GetType().Name);
+                _bus.Publish(_handler.Handle(command));
             }
             catch (Exception ex)
             {
-                _bus.Publish(message.Fail(ex));
+                _bus.Publish(command.Fail(ex));
             }
         }
     }

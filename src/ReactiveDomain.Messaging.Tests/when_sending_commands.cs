@@ -217,7 +217,7 @@ namespace ReactiveDomain.Messaging.Tests {
             lock (_fixture) {
                 AssertEx.IsOrBecomesTrue(() => _fixture.Bus.Idle);
                 _fixture.ClearCounters();
-                _fixture.Bus.Publish(new TestCommands.Command1(CorrelatedMessage.NewRoot()));
+                _fixture.Bus.Publish(new TestCommands.Command1());
                 SpinWait.SpinUntil(() => Interlocked.Read(ref _fixture.GotTestCommand1) == 1, 250);
             }
         }
@@ -227,7 +227,7 @@ namespace ReactiveDomain.Messaging.Tests {
             lock (_fixture) {
                 AssertEx.IsOrBecomesTrue(() => _fixture.Bus.Idle);
                 _fixture.ClearCounters();
-                _fixture.Bus.Send(new TestCommands.Command1(CorrelatedMessage.NewRoot()));
+                _fixture.Bus.Send(new TestCommands.Command1());
                 SpinWait.SpinUntil(() => Interlocked.Read(ref _fixture.GotTestCommand1) == 1, 250);
             }
         }
@@ -265,7 +265,7 @@ namespace ReactiveDomain.Messaging.Tests {
                 AssertEx.IsOrBecomesTrue(() => _fixture.Bus.Idle);
                 _fixture.ClearCounters();
 
-                _fixture.Bus.Send(new TestCommands.Command1(CorrelatedMessage.NewRoot()));
+                _fixture.Bus.Send(new TestCommands.Command1());
 
                 AssertEx.IsOrBecomesTrue(() => Interlocked.Read(ref _fixture.GotTestCommand1) == 1, null,
                     "Expected Command was handled");
@@ -306,7 +306,7 @@ namespace ReactiveDomain.Messaging.Tests {
             lock (_fixture) {
                 AssertEx.IsOrBecomesTrue(() => _fixture.Bus.Idle);
                 _fixture.ClearCounters();
-                _fixture.Bus.TrySend(new TestCommands.Command1(CorrelatedMessage.NewRoot()), out var result);
+                _fixture.Bus.TrySend(new TestCommands.Command1(), out var result);
                 Assert.True(result is Success, "Result not success");
                 AssertEx.IsOrBecomesTrue(() => _fixture.Bus.Idle, 4000);
                 AssertEx.IsOrBecomesTrue(() => Interlocked.Read(ref _fixture.GotTestCommand1) == 1, null,
@@ -488,8 +488,8 @@ namespace ReactiveDomain.Messaging.Tests {
                 AssertEx.IsOrBecomesTrue(() => _fixture.Bus.Idle);
                 _fixture.ClearCounters();
 
-                _fixture.Bus.Send(new TestCommands.Command1(CorrelatedMessage.NewRoot()));
-                _fixture.Bus.Send(new TestCommands.Command2(CorrelatedMessage.NewRoot()));
+                _fixture.Bus.Send(new TestCommands.Command1());
+                _fixture.Bus.Send(new TestCommands.Command2());
 
                 AssertEx.IsOrBecomesTrue(() => Interlocked.Read(ref _fixture.GotTestCommand1) == 1,
                     msg: "Expected Cmd1 handled");
@@ -602,14 +602,14 @@ namespace ReactiveDomain.Messaging.Tests {
                 Assert.False(_fixture.Bus.HasSubscriberFor<TestCommands.Command3>());
                 var subscription = _fixture.Bus.Subscribe<TestCommands.Command3>(_fixture);
                 Assert.True(_fixture.Bus.HasSubscriberFor<TestCommands.Command3>());
-                _fixture.Bus.Send(new TestCommands.Command3(CorrelatedMessage.NewRoot()));
+                _fixture.Bus.Send(new TestCommands.Command3());
                 AssertEx.IsOrBecomesTrue(
                     () => Interlocked.Read(ref _fixture.GotTestCommand3) == 1,
                     msg: "Expected command handled once, got" + Interlocked.Read(ref _fixture.GotTestCommand3));
                 subscription.Dispose();
                 Assert.False(_fixture.Bus.HasSubscriberFor<TestCommands.Command3>());
                 Assert.Throws<CommandNotHandledException>(() =>
-                    _fixture.Bus.Send(new TestCommands.Command3(CorrelatedMessage.NewRoot())));
+                    _fixture.Bus.Send(new TestCommands.Command3()));
 
             }
         }
@@ -624,7 +624,7 @@ namespace ReactiveDomain.Messaging.Tests {
                 //Add subscription
                 var subscription = _fixture.Bus.Subscribe<TestCommands.Command3>(_fixture);
                 Assert.True(_fixture.Bus.HasSubscriberFor<TestCommands.Command3>());
-                _fixture.Bus.Send(new TestCommands.Command3(CorrelatedMessage.NewRoot()));
+                _fixture.Bus.Send(new TestCommands.Command3());
                 AssertEx.IsOrBecomesTrue(
                     () => Interlocked.Read(ref _fixture.GotTestCommand3) == 1,
                     msg: "Expected command handled once, got" + Interlocked.Read(ref _fixture.GotTestCommand3));
@@ -632,11 +632,11 @@ namespace ReactiveDomain.Messaging.Tests {
                 subscription.Dispose();
                 Assert.False(_fixture.Bus.HasSubscriberFor<TestCommands.Command3>());
                 Assert.Throws<CommandNotHandledException>(() =>
-                    _fixture.Bus.Send(new TestCommands.Command3(CorrelatedMessage.NewRoot())));
+                    _fixture.Bus.Send(new TestCommands.Command3()));
                 //resubscribe
                 subscription = _fixture.Bus.Subscribe<TestCommands.Command3>(_fixture);
                 Assert.True(_fixture.Bus.HasSubscriberFor<TestCommands.Command3>());
-                _fixture.Bus.Send(new TestCommands.Command3(CorrelatedMessage.NewRoot()));
+                _fixture.Bus.Send(new TestCommands.Command3());
                 AssertEx.IsOrBecomesTrue(
                     () => Interlocked.Read(ref _fixture.GotTestCommand3) == 2,
                     msg: "Expected command handled twice, got" + Interlocked.Read(ref _fixture.GotTestCommand3));
@@ -657,7 +657,7 @@ namespace ReactiveDomain.Messaging.Tests {
                 //Add subscription
                 var subscription = _fixture.Bus.Subscribe<TestCommands.Command3>(_fixture);
                 Assert.True(_fixture.Bus.HasSubscriberFor<TestCommands.Command3>());
-                _fixture.Bus.Send(new TestCommands.Command3(CorrelatedMessage.NewRoot()));
+                _fixture.Bus.Send(new TestCommands.Command3());
                 AssertEx.IsOrBecomesTrue(
                     () => Interlocked.Read(ref _fixture.GotTestCommand3) == 1,
                     msg: "Expected command handled once, got" + Interlocked.Read(ref _fixture.GotTestCommand3));
@@ -665,7 +665,7 @@ namespace ReactiveDomain.Messaging.Tests {
                 subscription.Dispose();
                 Assert.False(_fixture.Bus.HasSubscriberFor<TestCommands.Command3>());
                 Assert.Throws<CommandNotHandledException>(() =>
-                    _fixture.Bus.Send(new TestCommands.Command3(CorrelatedMessage.NewRoot())));
+                    _fixture.Bus.Send(new TestCommands.Command3()));
 
                 Assert.True(_fixture.Bus.HasSubscriberFor<TestCommands.Command1>());
                 Assert.True(_fixture.Bus.HasSubscriberFor<TestCommands.Command2>());

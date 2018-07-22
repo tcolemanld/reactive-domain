@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Newtonsoft.Json;
 using ReactiveDomain.Messaging;
 
@@ -26,15 +27,21 @@ namespace ReactiveDomain.Testing {
         }
         public class Command1 : Command {
             public Command1(CorrelatedMessage source) : base(source) { }
+            public Command1() : base(NewRoot()) { }
         }
         public class Command2 : Command {
             public Command2(CorrelatedMessage source) : base(source) { }
+            public Command2() : base(NewRoot()) { }
         }
         public class Command3 : Command {
             public Command3(CorrelatedMessage source) : base(source) { }
+            public Command3() : base(NewRoot()) { }
         }
         public class Command4 : Command {
-            public Command4(CorrelatedMessage source) : base(source) { }
+            public Command4() : base(NewRoot()) { }
+        }
+        public class CancelableCommand : Command {
+            public CancelableCommand(CancellationToken token) : base(NewRoot(), token) {}
         }
         public class RemoteHandled : Command {
             public RemoteHandled(CorrelatedMessage source) : base(source) { }
