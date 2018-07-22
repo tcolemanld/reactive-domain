@@ -34,8 +34,8 @@ namespace ReactiveDomain.Messaging.Bus {
             _completionAction = completionAction;
             _cancelAction = cancelAction;
             _state = PendingAck;
-            _bus.Publish(new DelaySendEnvelope(TimeSource.System, ackTimeout, new AckTimeout(_command.MsgId)));
-            _bus.Publish(new DelaySendEnvelope(TimeSource.System, completionTimeout, new CompletionTimeout(_command.MsgId)));
+            _bus.Publish(new DelaySendEnvelope(TimeSource.System, ackTimeout, new CommandTracker.AckTimeout(_command.MsgId)));
+            _bus.Publish(new DelaySendEnvelope(TimeSource.System, completionTimeout, new CommandTracker.CompletionTimeout(_command.MsgId)));
 
         }
 
@@ -45,7 +45,7 @@ namespace ReactiveDomain.Messaging.Bus {
         }
 
         private long _ackCount;
-        public void Handle(AckCommand message) {
+        public void Handle(CommandTracker.AckCommand message) {
             Interlocked.Increment(ref _ackCount);
             var curState = Interlocked.Read(ref _state);
             if (curState != PendingAck || Interlocked.CompareExchange(ref _state, PendingResponse, curState) != curState) {
@@ -57,7 +57,7 @@ namespace ReactiveDomain.Messaging.Bus {
             }
          }
 
-        public void Handle(AckTimeout message) {
+        public void Handle(CommandTracker.AckTimeout message) {
             if (Interlocked.Read(ref _state) == PendingAck) {
                 if (_tcs.TrySetException(new CommandNotHandledException(" timed out waiting for a handler to start. Make sure a command handler is subscribed", _command.MsgId, _command.GetType().FullName,Guid.Empty))) {
                     if (Log.LogLevel >= LogLevel.Error)
@@ -67,7 +67,7 @@ namespace ReactiveDomain.Messaging.Bus {
             }
         }
 
-        public void Handle(CompletionTimeout message) {
+        public void Handle(CommandTracker.CompletionTimeout message) {
             if (Interlocked.Read(ref _state) == PendingResponse) {
                 if (_tcs.TrySetException(new CommandTimedOutException(" timed out waiting for handler to complete.", _command.MsgId, _command.GetType().FullName,Guid.Empty))) {
                     if (Log.LogLevel >= LogLevel.Error)
@@ -97,19 +97,5 @@ namespace ReactiveDomain.Messaging.Bus {
         }
     }
 
-    public class AckTimeout : Message {
-        public readonly Guid CommandId;
-        public AckTimeout(
-            Guid commandId) {
-            CommandId = commandId;
-        }
-    }
-
-    public class CompletionTimeout : Message {
-        public readonly Guid CommandId;
-        public CompletionTimeout(
-            Guid commandId) {
-            CommandId = commandId;
-        }
-    }
+   
 }

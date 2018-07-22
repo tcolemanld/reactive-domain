@@ -23,8 +23,8 @@ namespace ReactiveDomain.Messaging.Bus {
             _laterService.Start();
 
             _manager = new CommandManager(bus, _timeoutBus);
-            _timeoutBus.Subscribe<AckTimeout>(_manager);
-            _timeoutBus.Subscribe<CompletionTimeout>(_manager);
+            _timeoutBus.Subscribe<CommandTracker.AckTimeout>(_manager);
+            _timeoutBus.Subscribe<CommandTracker.CompletionTimeout>(_manager);
 
             _publishQueue = new MultiQueuedHandler(
                 queueCount,

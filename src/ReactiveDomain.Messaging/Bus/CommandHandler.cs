@@ -31,7 +31,7 @@ namespace ReactiveDomain.Messaging.Bus {
 
         public void Handle(T command) {
             if (_disposed) { return; }
-            _bus.Publish(new AckCommand(command.MsgId, command.GetType().FullName, _id));
+            _bus.Publish(new CommandTracker.AckCommand(command.MsgId, command.GetType().FullName, _id));
             try {
                 if (command.IsCanceled) {
                     _bus.Publish(command.Canceled());

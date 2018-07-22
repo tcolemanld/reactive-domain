@@ -8,9 +8,9 @@ namespace ReactiveDomain.Messaging.Bus {
     public class CommandManager :
         QueuedSubscriber,
         IHandle<CommandResponse>,
-        IHandle<AckCommand>,
-        IHandle<AckTimeout>,
-        IHandle<CompletionTimeout> {
+        IHandle<CommandTracker.AckCommand>,
+        IHandle<CommandTracker.AckTimeout>,
+        IHandle<CommandTracker.CompletionTimeout> {
         private static readonly ILogger Log = LogManager.GetLogger("ReactiveDomain");
         private static readonly TimeSpan DefaultAckTimeout = TimeSpan.FromMilliseconds(100);
         private static readonly TimeSpan DefaultResponseTimeout = TimeSpan.FromMilliseconds(500);
@@ -24,7 +24,7 @@ namespace ReactiveDomain.Messaging.Bus {
             _timeoutBus = timeoutBus;
             _pendingCommands = new ConcurrentDictionary<Guid, IntegratedCommandTracker>();
             Subscribe<CommandResponse>(this);
-            Subscribe<AckCommand>(this);
+            Subscribe<CommandTracker.AckCommand>(this);
         }
         public TaskCompletionSource<CommandResponse> RegisterCommandAsync(
                                                                 Command command,
@@ -71,15 +71,15 @@ namespace ReactiveDomain.Messaging.Bus {
             tracker?.Handle(message);
         }
 
-        public void Handle(AckCommand message) {
+        public void Handle(CommandTracker.AckCommand message) {
             _pendingCommands.TryGetValue(message.CommandId, out var tracker);
             tracker?.Handle(message);
         }
-        public void Handle(AckTimeout message) {
+        public void Handle(CommandTracker.AckTimeout message) {
             _pendingCommands.TryGetValue(message.CommandId, out var tracker);
             tracker?.Handle(message);
         }
-        public void Handle(CompletionTimeout message) {
+        public void Handle(CommandTracker.CompletionTimeout message) {
             _pendingCommands.TryGetValue(message.CommandId, out var tracker);
             tracker?.Handle(message);
         }

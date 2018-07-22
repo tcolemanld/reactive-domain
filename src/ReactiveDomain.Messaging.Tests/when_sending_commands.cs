@@ -9,7 +9,7 @@ namespace ReactiveDomain.Messaging.Tests {
         IHandleCommand<TestCommands.AckedCommand>,
         IHandleCommand<TestCommands.Command1>,
         IHandleCommand<TestCommands.Command2>,
-        IHandle<AckCommand>,
+        IHandle<CommandTracker.AckCommand>,
         IHandle<Message>,
         IHandle<CommandResponse>,
         IHandleCommand<TestCommands.Fail>,
@@ -57,7 +57,7 @@ namespace ReactiveDomain.Messaging.Tests {
             Bus.Subscribe<TestCommands.AckedCommand>(this);
             Bus.Subscribe<TestCommands.Command1>(this);
             Bus.Subscribe<TestCommands.Command2>(this);
-            Bus.Subscribe<AckCommand>(this);
+            Bus.Subscribe<CommandTracker.AckCommand>(this);
             Bus.Subscribe<Message>(this);
             Bus.Subscribe<CommandResponse>(this);
             Bus.Subscribe<TestCommands.Fail>(this);
@@ -164,7 +164,7 @@ namespace ReactiveDomain.Messaging.Tests {
 
             return command.Succeed(data);
         }
-        public void Handle(AckCommand command) {
+        public void Handle(CommandTracker.AckCommand command) {
             Interlocked.Increment(ref GotAck);
         }
         public void Handle(Message command) {
