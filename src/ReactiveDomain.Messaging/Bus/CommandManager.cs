@@ -16,13 +16,13 @@ namespace ReactiveDomain.Messaging.Bus {
         private static readonly TimeSpan DefaultResponseTimeout = TimeSpan.FromMilliseconds(500);
         private readonly IBus _outBus;
         private readonly IBus _timeoutBus;
-        private readonly ConcurrentDictionary<Guid, CommandTracker> _pendingCommands;
+        private readonly ConcurrentDictionary<Guid, IntegratedCommandTracker> _pendingCommands;
         private bool _disposed;
 
         public CommandManager(IBus bus, IBus timeoutBus) : base(bus) {
             _outBus = bus;
             _timeoutBus = timeoutBus;
-            _pendingCommands = new ConcurrentDictionary<Guid, CommandTracker>();
+            _pendingCommands = new ConcurrentDictionary<Guid, IntegratedCommandTracker>();
             Subscribe<CommandResponse>(this);
             Subscribe<AckCommand>(this);
         }
@@ -40,7 +40,7 @@ namespace ReactiveDomain.Messaging.Bus {
                 throw new CommandException($"Command tracker already registered for this Command {command.GetType().Name} Id {command.MsgId}.", command.MsgId, command.GetType().FullName, Guid.Empty);
 
             var tcs = new TaskCompletionSource<CommandResponse>();
-            var tracker = new CommandTracker(
+            var tracker = new IntegratedCommandTracker(
                                     command,
                                     tcs,
                                     () => {

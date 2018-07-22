@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using ReactiveDomain.Logging;
 
 namespace ReactiveDomain.Messaging.Bus {
-    public class CommandTracker : IDisposable {
+    public class IntegratedCommandTracker : IDisposable {
         private static readonly ILogger Log = LogManager.GetLogger("ReactiveDomain");
         private readonly Command _command;
         private readonly TaskCompletionSource<CommandResponse> _tcs;
@@ -19,7 +19,7 @@ namespace ReactiveDomain.Messaging.Bus {
         private long _state;
 
 
-        public CommandTracker(
+        public IntegratedCommandTracker(
             Command command,
             TaskCompletionSource<CommandResponse> tcs,
             Action completionAction,
