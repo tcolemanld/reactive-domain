@@ -3,26 +3,29 @@ using System.Collections.Concurrent;
 using ReactiveDomain.Messaging.Bus;
 
 namespace ReactiveDomain.Foundation.Commands {
-    public class CommandManager : 
+    public sealed class CommandManager :
         ICommandSender,
         IHandle<CommandResponse>,
         IHandle<CommandTracker.AckCommand>,
         IHandle<CommandTracker.AckTimeout>,
         IHandle<CommandTracker.CompletionTimeout>,
-        IHandle<CommandTracker.CommandComplete>
-    {
+        IHandle<CommandTracker.CommandComplete>,
+        IDisposable {
         private readonly ConcurrentDictionary<Guid, CommandTracker> _commands;
         private readonly IBus _bus;
+        private readonly TimeSource _timeSource;
+
         // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
         private readonly LaterService _laterService;
         private readonly InMemoryBus _timeoutBus;
-       
-        public CommandManager(IBus bus) {
+
+        public CommandManager(IBus bus, TimeSource timeSource = null) {
             _bus = bus;
+            _timeSource = timeSource ?? TimeSource.System;
             _bus.Subscribe<CommandTracker.AckCommand>(this);
             _bus.Subscribe<CommandResponse>(this);
             _bus.Subscribe<CommandTracker.CommandComplete>(this);
-            
+
             _timeoutBus = new InMemoryBus(nameof(_timeoutBus), false);
             _laterService = new LaterService(_timeoutBus, TimeSource.System);
             // ReSharper disable once RedundantTypeArgumentsOfMethod
@@ -59,53 +62,58 @@ namespace ReactiveDomain.Foundation.Commands {
             Send(command, false, responseTimeout, ackTimeout);
         }
         private CommandResponse Send(
-                    Command command, 
-                    bool block, 
-                    TimeSpan? responseTimeout = null, 
+                    Command command,
+                    bool blocking,
+                    TimeSpan? responseTimeout = null,
                     TimeSpan? ackTimeout = null) {
-            if (command.IsCanceled) { return command.Canceled();}
-            if(! _commands.TryGetValue(command.MsgId,out var tracker))
-            {
+
+            if (command.IsCanceled) { return command.Canceled(); }
+
+            if (!_commands.TryGetValue(command.MsgId, out var tracker)) {
                 tracker = new CommandTracker(
                                         command,
                                         _bus,
                                         _timeoutBus,
                                         responseTimeout ?? TimeSpan.FromMilliseconds(500),
-                                        ackTimeout ?? TimeSpan.FromMilliseconds(100));
-                _commands.AddOrUpdate(command.MsgId, id => tracker, (id, tr) => throw new InvalidOperationException("Already tracking Command") );
+                                        ackTimeout ?? TimeSpan.FromMilliseconds(100),
+                                        _timeSource);
+                _commands.AddOrUpdate(command.MsgId, id => tracker, (id, tr) => throw new InvalidOperationException("Already tracking Command"));
             }
-            else {
-                throw new InvalidOperationException("Already tracking Command");
-            }
+            else { throw new InvalidOperationException("Already tracking Command"); }
 
-            return    block ? tracker.Send() : tracker.SendAsync();
+            return tracker.Send(blocking);
         }
 
 
         public void Handle(CommandResponse message) {
-            if( _commands.TryGetValue(message.MsgId,out var tracker)) {
+            if (_commands.TryGetValue(message.MsgId, out var tracker)) {
                 tracker.Handle(message);
             }
         }
         public void Handle(CommandTracker.AckCommand message) {
-            if( _commands.TryGetValue(message.MsgId,out var tracker)) {
+            if (_commands.TryGetValue(message.MsgId, out var tracker)) {
                 tracker.Handle(message);
             }
         }
         public void Handle(CommandTracker.AckTimeout message) {
-            if( _commands.TryGetValue(message.MsgId,out var tracker)) {
+            if (_commands.TryGetValue(message.MsgId, out var tracker)) {
                 tracker.Handle(message);
             }
         }
         public void Handle(CommandTracker.CompletionTimeout message) {
-            if( _commands.TryGetValue(message.MsgId,out var tracker)) {
+            if (_commands.TryGetValue(message.MsgId, out var tracker)) {
                 tracker.Handle(message);
             }
         }
 
         public void Handle(CommandTracker.CommandComplete message) {
             _commands.TryRemove(message.MsgId, out var tracker);
-            //todo: cleanup tracker
+            tracker.Dispose();
+        }
+
+        public void Dispose() {
+            _laterService?.Dispose();
+            _timeoutBus?.Dispose();
         }
     }
 }
