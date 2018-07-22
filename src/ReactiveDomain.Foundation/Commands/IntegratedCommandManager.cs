@@ -7,7 +7,7 @@ using ReactiveDomain.Messaging;
 using ReactiveDomain.Messaging.Bus;
 
 namespace ReactiveDomain.Foundation.Commands {
-    public class CommandManager :
+    public class IntegratedCommandManager :
         QueuedSubscriber,
         IHandle<CommandResponse>,
         IHandle<CommandTracker.AckCommand>,
@@ -21,7 +21,7 @@ namespace ReactiveDomain.Foundation.Commands {
         private readonly ConcurrentDictionary<Guid, IntegratedCommandTracker> _pendingCommands;
         private bool _disposed;
 
-        public CommandManager(IBus bus, IBus timeoutBus) : base(bus) {
+        public IntegratedCommandManager(IBus bus, IBus timeoutBus) : base(bus) {
             _outBus = bus;
             _timeoutBus = timeoutBus;
             _pendingCommands = new ConcurrentDictionary<Guid, IntegratedCommandTracker>();
@@ -33,7 +33,7 @@ namespace ReactiveDomain.Foundation.Commands {
                                                                 TimeSpan? ackTimeout = null,
                                                                 TimeSpan? responseTimeout = null) {
             if (_disposed) {
-                throw new ObjectDisposedException(nameof(CommandManager));
+                throw new ObjectDisposedException(nameof(IntegratedCommandManager));
             }
 
             if (Log.LogLevel >= LogLevel.Debug)

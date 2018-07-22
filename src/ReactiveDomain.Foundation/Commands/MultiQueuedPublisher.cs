@@ -5,7 +5,7 @@ using ReactiveDomain.Messaging.Bus;
 
 namespace ReactiveDomain.Foundation.Commands {
     public class MultiQueuedPublisher : ICommandSender, IPublisher, IDisposable {
-        private readonly CommandManager _manager;
+        private readonly IntegratedCommandManager _manager;
         private readonly TimeSpan? _slowMsgThreshold;
         private readonly TimeSpan? _slowCmdThreshold;
         private readonly MultiQueuedHandler _publishQueue;
@@ -24,7 +24,7 @@ namespace ReactiveDomain.Foundation.Commands {
             _timeoutBus.Subscribe<DelaySendEnvelope>(_laterService);
             _laterService.Start();
 
-            _manager = new CommandManager(bus, _timeoutBus);
+            _manager = new IntegratedCommandManager(bus, _timeoutBus);
             _timeoutBus.Subscribe<CommandTracker.AckTimeout>(_manager);
             _timeoutBus.Subscribe<CommandTracker.CompletionTimeout>(_manager);
 
