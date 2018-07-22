@@ -1,5 +1,6 @@
 using System;
 using ReactiveDomain.Logging;
+using ReactiveDomain.Util;
 
 namespace ReactiveDomain.Messaging.Bus
 {
@@ -9,9 +10,11 @@ namespace ReactiveDomain.Messaging.Bus
         private static readonly ILogger Log = LogManager.GetLogger("ReactiveDomain");
         private readonly IPublisher _bus;
         private readonly IHandleCommand<T> _handler;
-        public CommandHandler(IPublisher bus, IHandleCommand<T> handler)
+        public CommandHandler(IPublisher returnBus, IHandleCommand<T> handler)
         {
-            _bus = bus;
+            Ensure.NotNull(returnBus, "returnBus");
+            Ensure.NotNull(handler, "handler");
+            _bus = returnBus;
             _handler = handler;
         }
 

@@ -33,6 +33,9 @@ namespace ReactiveDomain.Testing {
         public class Command3 : Command {
             public Command3(CorrelatedMessage source) : base(source) { }
         }
+        public class Command4 : Command {
+            public Command4(CorrelatedMessage source) : base(source) { }
+        }
         public class RemoteHandled : Command {
             public RemoteHandled(CorrelatedMessage source) : base(source) { }
         }
