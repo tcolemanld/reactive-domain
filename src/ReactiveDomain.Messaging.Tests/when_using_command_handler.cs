@@ -34,7 +34,7 @@ namespace ReactiveDomain.Messaging.Tests {
         private Guid _responseId;
         private Guid _cancelId;
         private Exception _wrappedException;
-        private ManualResetEventSlim _releaseCmd = new ManualResetEventSlim();
+        private readonly ManualResetEventSlim _releaseCmd = new ManualResetEventSlim();
         public when_using_command_handler() {
             _bus = new InMemoryBus(nameof(when_using_command_handler), false);
             _bus.Subscribe<AckCommand>(this);
@@ -113,7 +113,6 @@ namespace ReactiveDomain.Messaging.Tests {
             _releaseCmd.Set();
             AssertEx.IsOrBecomesTrue(()=>_successCount ==1);
             Assert.Equal(0,_cancelCount);
-            
         }
         [Fact]
         public void commands_can_be_canceled() {
