@@ -6,21 +6,38 @@ namespace ReactiveDomain.Messaging.Bus {
     [Serializable]
     public class CommandException : Exception
     {
-        public readonly Command Command;
+        /// <summary>
+        /// MsgId of the Command being acked
+        /// </summary>
+        public readonly Guid CommandId;
+        /// <summary>
+        /// Full Type Name of the Command being acked
+        /// </summary>
+        public readonly string CommandFullName;
+        /// <summary>
+        /// Id of the Command Handler sending the ack
+        /// </summary>
+        public readonly Guid HandlerId;
 
-        public CommandException(Command command) : base($"{command?.GetType().Name}: Failed")
+        public CommandException(Guid commandId, string commandFullName, Guid handlerId) : base($"{commandFullName}: Failed")
         {
-            Command = command;
+            CommandId = commandId;
+            CommandFullName = commandFullName;
+            HandlerId = handlerId;
         }
 
-        public CommandException(string message, Command command) : base($"{command?.GetType().Name}: {message}")
+        public CommandException(string message, Guid commandId, string commandFullName, Guid handlerId) : base($"{commandFullName}: {message}")
         {
-            Command = command;
+            CommandId = commandId;
+            CommandFullName = commandFullName;
+            HandlerId = handlerId;
         }
 
-        public CommandException(string message, Exception inner, Command command) : base($"{command?.GetType().Name}: {message}", inner)
+        public CommandException(string message, Exception inner, Guid commandId, string commandFullName, Guid handlerId) : base($"{commandFullName}: {message}", inner)
         {
-            Command = command;
+            CommandId = commandId;
+            CommandFullName = commandFullName;
+            HandlerId = handlerId;
         }
 
         protected CommandException(
@@ -34,15 +51,15 @@ namespace ReactiveDomain.Messaging.Bus {
     public class CommandCanceledException : CommandException
     {
 
-        public CommandCanceledException(Command command) : base(" canceled", command)
+        public CommandCanceledException(Guid commandId, string commandFullName, Guid handlerId) : base(" canceled", commandId,  commandFullName,  handlerId)
         {
         }
 
-        public CommandCanceledException(string message, Command command) : base(message, command)
+        public CommandCanceledException(string message, Guid commandId, string commandFullName, Guid handlerId) : base(message, commandId,  commandFullName,  handlerId)
         {
         }
 
-        public CommandCanceledException(string message, Exception inner, Command command) : base(message, inner, command)
+        public CommandCanceledException(string message, Exception inner, Guid commandId, string commandFullName, Guid handlerId) : base(message, inner, commandId,  commandFullName,  handlerId)
         {
         }
 
@@ -56,15 +73,15 @@ namespace ReactiveDomain.Messaging.Bus {
     public class CommandTimedOutException : CommandException
     {
 
-        public CommandTimedOutException(Command command) : base(" timed out", command)
+        public CommandTimedOutException(Guid commandId, string commandFullName, Guid handlerId) : base(" timed out", commandId,  commandFullName,  handlerId)
         {
         }
 
-        public CommandTimedOutException(string message, Command command) : base(message, command)
+        public CommandTimedOutException(string message, Guid commandId, string commandFullName, Guid handlerId) : base(message, commandId,  commandFullName,  handlerId)
         {
         }
 
-        public CommandTimedOutException(string message, Exception inner, Command command) : base(message, inner, command)
+        public CommandTimedOutException(string message, Exception inner, Guid commandId, string commandFullName, Guid handlerId) : base(message, inner, commandId,  commandFullName,  handlerId)
         {
         }
 
@@ -83,15 +100,15 @@ namespace ReactiveDomain.Messaging.Bus {
     public class CommandOversubscribedException : CommandException
     {
 
-        public CommandOversubscribedException(Command command) : base(" oversubscribed", command)
+        public CommandOversubscribedException(Guid commandId, string commandFullName, Guid handlerId) : base(" oversubscribed", commandId,  commandFullName,  handlerId)
         {
         }
 
-        public CommandOversubscribedException(string message, Command command) : base(message, command)
+        public CommandOversubscribedException(string message, Guid commandId, string commandFullName, Guid handlerId) : base(message, commandId,  commandFullName,  handlerId)
         {
         }
 
-        public CommandOversubscribedException(string message, Exception inner, Command command) : base(message, inner, command)
+        public CommandOversubscribedException(string message, Exception inner, Guid commandId, string commandFullName, Guid handlerId) : base(message, inner, commandId,  commandFullName,  handlerId)
         {
         }
 
@@ -105,15 +122,15 @@ namespace ReactiveDomain.Messaging.Bus {
 	public class CommandNotHandledException : CommandException
 	{
 
-		public CommandNotHandledException(Command command) : base(" not handled", command)
+		public CommandNotHandledException(Guid commandId, string commandFullName, Guid handlerId) : base(" not handled", commandId,  commandFullName,  handlerId)
 		{
 		}
 
-		public CommandNotHandledException(string message, Command command) : base(message, command)
+		public CommandNotHandledException(string message, Guid commandId, string commandFullName, Guid handlerId) : base(message, commandId,  commandFullName,  handlerId)
 		{
 		}
 
-		public CommandNotHandledException(string message, Exception inner, Command command) : base(message, inner, command)
+		public CommandNotHandledException(string message, Exception inner, Guid commandId, string commandFullName, Guid handlerId) : base(message, inner,  commandId,  commandFullName,  handlerId)
 		{
 		}
 

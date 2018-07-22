@@ -137,7 +137,7 @@ namespace ReactiveDomain.Messaging.Tests {
             Interlocked.Increment(ref GotTestFailCommand);
             //avoid race condition in test don't complete the command until ack returned
             SpinWait.SpinUntil(() => Interlocked.Read(ref GotAck) == 1);
-            return command.Fail();
+            return command.Failed();
         }
         public CommandResponse Handle(TestCommands.Throw command) {
             Interlocked.Increment(ref GotTestThrowCommand);
@@ -153,14 +153,14 @@ namespace ReactiveDomain.Messaging.Tests {
                 throw new TestException();
             }
             catch (Exception e) {
-                return command.Fail(e);
+                return command.Failed(e);
             }
         }
         public CommandResponse Handle(TestCommands.TypedResponse command) {
             Interlocked.Increment(ref GotTypedResponse);
             var data = 42;
             if (command.FailCommand)
-                return command.Fail(new TestException(), data);
+                return command.Failed(new TestException(), data);
 
             return command.Succeed(data);
         }

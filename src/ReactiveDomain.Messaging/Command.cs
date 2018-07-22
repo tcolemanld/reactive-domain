@@ -43,49 +43,53 @@ namespace ReactiveDomain.Messaging {
         /// Create a CommandResponse indicating that this command has succeeded.
         /// </summary>
         public CommandResponse Succeed() {
-            return new Success(this);
+            return new Success(MsgId, GetType().FullName,Guid.Empty,CorrelationId, new SourceId(this));
         }
 
         /// <summary>
         /// Create a CommandResponse indicating that this command has failed.
         /// </summary>
-        public CommandResponse Fail(Exception ex = null) {
-            return new Fail(this, ex);
+        public CommandResponse Failed(Exception ex = null) {
+            return new Fail(MsgId, GetType().FullName,Guid.Empty, ex,CorrelationId, new SourceId(this));
         }
 
         /// <summary>
         /// Create a CommandResponse indicating that this command has been canceled.
         /// </summary>
         public CommandResponse Canceled() {
-            return new Canceled(this);
+            return new Canceled(MsgId, GetType().FullName,Guid.Empty, CorrelationId, new SourceId(this));
         }
     }
 
     /// <summary>
-    /// Indicates receipt of a command message.
+    /// Indicates receipt of a command message at a command handler with a registered target.
     /// Does not indicate success or failure of command processing.
     /// </summary>
     /// <inheritdoc cref="Message"/>
-    public class AckCommand : CorrelatedMessage {
-       /// <summary>
-        /// The Command whose receipt is being acknowledged.
-        /// </summary>
-        public Command SourceCommand { get; }
+    public class AckCommand : Message {
         /// <summary>
-        /// The unique ID of the Command whose receipt is being acknowledged.
+        /// MsgId of the Command being acked
         /// </summary>
-        public Guid CommandId => SourceCommand.MsgId;
+        public readonly Guid CommandId;
         /// <summary>
-        /// The Type of the Command whose receipt is being acknowledged.
+        /// Full Type Name of the Command being acked
         /// </summary>
-        public Type CommandType => SourceCommand.GetType();
+        public readonly string CommandFullName;
+        /// <summary>
+        /// Id of the Command Handler sending the ack
+        /// </summary>
+        public readonly Guid HandlerId;
 
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="sourceCommand">The Command whose receipt is being acknowledged.</param>
-        public AckCommand(Command sourceCommand) : base(sourceCommand.CorrelationId, new SourceId(sourceCommand)) {
-            SourceCommand = sourceCommand;
+        /// <param name="commandId">MsgId of the Command being acked</param>
+        /// <param name="commandFullName">Full Type Name of the Command being acked</param>
+        /// <param name="handlerId">Id of the Command Handler sending the ack</param>
+        public AckCommand(Guid commandId, string commandFullName, Guid handlerId) {
+            CommandId = commandId;
+            CommandFullName = commandFullName;
+            HandlerId = handlerId;
         }
 
     }

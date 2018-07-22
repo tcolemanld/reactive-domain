@@ -19,7 +19,7 @@ namespace ReactiveDomain.Messaging.Bus {
         private readonly ConcurrentDictionary<Guid, CommandTracker> _pendingCommands;
         private bool _disposed;
 
-        public CommandManager(IBus bus,IBus timeoutBus) : base(bus) {
+        public CommandManager(IBus bus, IBus timeoutBus) : base(bus) {
             _outBus = bus;
             _timeoutBus = timeoutBus;
             _pendingCommands = new ConcurrentDictionary<Guid, CommandTracker>();
@@ -37,7 +37,7 @@ namespace ReactiveDomain.Messaging.Bus {
             if (Log.LogLevel >= LogLevel.Debug)
                 Log.Debug("Registering command tracker for" + command.GetType().Name);
             if (_pendingCommands.ContainsKey(command.MsgId))
-                throw new CommandException($"Command tracker already registered for this Command {command.GetType().Name} Id {command.MsgId}.", command);
+                throw new CommandException($"Command tracker already registered for this Command {command.GetType().Name} Id {command.MsgId}.", command.MsgId, command.GetType().FullName, Guid.Empty);
 
             var tcs = new TaskCompletionSource<CommandResponse>();
             var tracker = new CommandTracker(
@@ -48,7 +48,7 @@ namespace ReactiveDomain.Messaging.Bus {
                                             tr.Dispose();
                                     },
                                     () => {
-                                        _outBus.Publish(new Canceled(command));
+                                        _outBus.Publish(new Canceled(command.MsgId, command.GetType().FullName, Guid.Empty, command.CorrelationId, new SourceId(command)));
                                         if (_pendingCommands.TryRemove(command.MsgId, out var tr))
                                             tr.Dispose();
                                     },
@@ -60,9 +60,9 @@ namespace ReactiveDomain.Messaging.Bus {
             }
             //Add failed, cleanup & throw
             tracker.Dispose();
-            tcs.SetResult(new Canceled(command));
+            tcs.SetResult(new Canceled(command.MsgId, command.GetType().FullName, Guid.Empty, command.CorrelationId, new SourceId(command)));
             tcs.SetCanceled();
-            throw new CommandException($"Failed to register command tracker for this Command {command.GetType().Name} Id {command.MsgId}.", command);
+            throw new CommandException($"Failed to register command tracker for this Command {command.GetType().Name} Id {command.MsgId}.", command.MsgId, command.GetType().FullName, Guid.Empty);
 
         }
 

@@ -51,7 +51,7 @@ namespace ReactiveDomain.Messaging.Bus {
             if (curState != PendingAck || Interlocked.CompareExchange(ref _state, PendingResponse, curState) != curState) {
                 if (Log.LogLevel >= LogLevel.Error)
                     Log.Error(_command.GetType().Name + " Multiple Handlers Acked Command");
-                if (_tcs.TrySetException(new CommandOversubscribedException(" multiple handlers responded to the command", _command)))
+                if (_tcs.TrySetException(new CommandOversubscribedException(" multiple handlers responded to the command", _command.MsgId, _command.GetType().FullName,Guid.Empty)))
                     _cancelAction();
                 return;
             }
@@ -59,7 +59,7 @@ namespace ReactiveDomain.Messaging.Bus {
 
         public void Handle(AckTimeout message) {
             if (Interlocked.Read(ref _state) == PendingAck) {
-                if (_tcs.TrySetException(new CommandNotHandledException(" timed out waiting for a handler to start. Make sure a command handler is subscribed", _command))) {
+                if (_tcs.TrySetException(new CommandNotHandledException(" timed out waiting for a handler to start. Make sure a command handler is subscribed", _command.MsgId, _command.GetType().FullName,Guid.Empty))) {
                     if (Log.LogLevel >= LogLevel.Error)
                         Log.Error(_command.GetType().Name + " command not handled (no handler)");
                     _cancelAction();
@@ -69,7 +69,7 @@ namespace ReactiveDomain.Messaging.Bus {
 
         public void Handle(CompletionTimeout message) {
             if (Interlocked.Read(ref _state) == PendingResponse) {
-                if (_tcs.TrySetException(new CommandTimedOutException(" timed out waiting for handler to complete.", _command))) {
+                if (_tcs.TrySetException(new CommandTimedOutException(" timed out waiting for handler to complete.", _command.MsgId, _command.GetType().FullName,Guid.Empty))) {
                     if (Log.LogLevel >= LogLevel.Error)
                         Log.Error(_command.GetType().Name + " command timed out");
                     _cancelAction();

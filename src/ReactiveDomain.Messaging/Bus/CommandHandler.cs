@@ -16,7 +16,7 @@ namespace ReactiveDomain.Messaging.Bus {
             this(returnBus, handler == null ? (Func<T, CommandResponse>)null : handler.Handle, name) {
         }
         public CommandHandler(IPublisher returnBus, Func<T, bool> handleFunc, string name = null) :
-            this(returnBus, cmd => handleFunc(cmd) ? cmd.Succeed() : cmd.Fail(), name) {
+            this(returnBus, cmd => handleFunc(cmd) ? cmd.Succeed() : cmd.Failed(), name) {
             Ensure.NotNull(handleFunc, "handler");
         }
         public CommandHandler(IPublisher returnBus, Func<T, CommandResponse> handleFunc, string name = null) {
@@ -31,7 +31,7 @@ namespace ReactiveDomain.Messaging.Bus {
 
         public void Handle(T command) {
             if (_disposed) { return; }
-            _bus.Publish(new AckCommand(command));
+            _bus.Publish(new AckCommand(command.MsgId, command.GetType().FullName, _id));
             try {
                 if (command.IsCanceled) {
                     _bus.Publish(command.Canceled());
@@ -42,7 +42,7 @@ namespace ReactiveDomain.Messaging.Bus {
                 _bus.Publish(_handler(command));
             }
             catch (Exception ex) {
-                _bus.Publish(command.Fail(ex));
+                _bus.Publish(command.Failed(ex));
             }
         }
 

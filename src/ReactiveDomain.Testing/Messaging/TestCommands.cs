@@ -41,7 +41,7 @@ namespace ReactiveDomain.Testing {
             public Command4() : base(NewRoot()) { }
         }
         public class CancelableCommand : Command {
-            public CancelableCommand(CancellationToken token) : base(NewRoot(), token) {}
+            public CancelableCommand(CancellationToken token) : base(NewRoot(), token) { }
         }
         public class RemoteHandled : Command {
             public RemoteHandled(CorrelatedMessage source) : base(source) { }
@@ -72,8 +72,7 @@ namespace ReactiveDomain.Testing {
                             this,
                             data);
             }
-            // ReSharper disable once MemberHidesStaticFromOuterClass
-            public FailedResponse Fail(Exception ex, int data) {
+            public FailedResponse Failed(Exception ex, int data) {
                 return new FailedResponse(
                             this,
                             ex,
@@ -93,7 +92,12 @@ namespace ReactiveDomain.Testing {
             public TestResponse(
                 TypedResponse sourceCommand,
                 int data) :
-                    base(sourceCommand) {
+                    base(sourceCommand.MsgId, sourceCommand.GetType().FullName, Guid.Empty, sourceCommand.CorrelationId, new SourceId(sourceCommand)) {
+                Data = data;
+            }
+            [JsonConstructor]
+            public TestResponse(int data, Guid commandId, string commandFullName, Guid handlerId, CorrelationId correlationId, SourceId sourceId):
+                base(commandId, commandFullName, handlerId,correlationId, sourceId) {
                 Data = data;
             }
         }
@@ -103,7 +107,12 @@ namespace ReactiveDomain.Testing {
                TypedResponse sourceCommand,
                Exception exception,
                int data) :
-                    base(sourceCommand, exception) {
+                    base(sourceCommand.MsgId, sourceCommand.GetType().FullName, Guid.Empty, exception, sourceCommand.CorrelationId, new SourceId(sourceCommand)) {
+                Data = data;
+            }
+            [JsonConstructor]
+            public FailedResponse(int data, Guid commandId, string commandFullName, Guid handlerId,Exception exception,CorrelationId correlationId, SourceId sourceId):
+                base(commandId, commandFullName, handlerId, exception, correlationId, sourceId) {
                 Data = data;
             }
         }

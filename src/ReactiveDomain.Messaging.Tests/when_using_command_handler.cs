@@ -262,11 +262,11 @@ namespace ReactiveDomain.Messaging.Tests {
 
         public CommandResponse Handle(TestCommands.Command2 command) {
             Interlocked.Increment(ref _cmd2Count);
-            return command.Fail();
+            return command.Failed();
         }
         public CommandResponse Handle(TestCommands.Command3 command) {
             Interlocked.Increment(ref _cmd3Count);
-            return command.Fail(new CommandTestException());
+            return command.Failed(new CommandTestException());
         }
         public CommandResponse Handle(TestCommands.Command4 command) {
             Interlocked.Increment(ref _cmd4Count);

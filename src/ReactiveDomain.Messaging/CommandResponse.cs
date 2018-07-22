@@ -1,29 +1,44 @@
 ﻿using System;
+using System.Threading;
+using Newtonsoft.Json;
 using ReactiveDomain.Messaging.Bus;
 
 namespace ReactiveDomain.Messaging
 {
     public abstract class CommandResponse : CorrelatedMessage
     {
-        public Command SourceCommand { get; }
-        public Type CommandType => SourceCommand.GetType();
-        public Guid CommandId => SourceCommand.MsgId;
+        /// <summary>
+        /// MsgId of the Command
+        /// </summary>
+        public readonly Guid CommandId;
+        /// <summary>
+        /// Full Type Name of the Command 
+        /// </summary>
+        public readonly string CommandFullName;
+        /// <summary>
+        /// Id of the Command Handler sending the response
+        /// </summary>
+        public readonly Guid HandlerId;
 
-        protected CommandResponse(Command sourceCommand):base(sourceCommand.CorrelationId, new SourceId(sourceCommand))   
-        {
-            SourceCommand = sourceCommand;
+        
+        protected CommandResponse(Guid commandId, string commandFullName, Guid handlerId, CorrelationId correlationId, SourceId sourceId) : base(correlationId, sourceId) {
+            CommandId = commandId;
+            CommandFullName = commandFullName;
+            HandlerId = handlerId;
         }
     }
 
     public class Success : CommandResponse
     {
-        public Success(Command sourceCommand) : base(sourceCommand) {}
+        public Success(Guid commandId, string commandFullName, Guid handlerId, CorrelationId correlationId, SourceId sourceId) :
+            base( commandId,  commandFullName,  handlerId,  correlationId,  sourceId) {}
     }
 
     public class Fail : CommandResponse
     {
         public Exception Exception { get; }
-        public Fail(Command sourceCommand, Exception exception) : base(sourceCommand) 
+        public Fail(Guid commandId, string commandFullName, Guid handlerId, Exception exception, CorrelationId correlationId, SourceId sourceId) :
+            base( commandId,  commandFullName,  handlerId,  correlationId,  sourceId) 
         {
             Exception = exception;
         }
@@ -31,6 +46,7 @@ namespace ReactiveDomain.Messaging
 
     public class Canceled : Fail
     {
-        public Canceled(Command sourceCommand) : base(sourceCommand, new CommandCanceledException(sourceCommand)) { }
+        public Canceled(Guid commandId, string commandFullName, Guid handlerId, CorrelationId correlationId, SourceId sourceId) :
+            base( commandId,  commandFullName,  handlerId,  new CommandCanceledException(commandId, commandFullName,handlerId),correlationId,  sourceId ) { }
     }
 }

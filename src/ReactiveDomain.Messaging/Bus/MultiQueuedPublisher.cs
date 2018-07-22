@@ -17,12 +17,12 @@ namespace ReactiveDomain.Messaging.Bus {
                 TimeSpan? slowCmdThreshold) {
             _slowMsgThreshold = slowMsgThreshold;
             _slowCmdThreshold = slowCmdThreshold;
-            _timeoutBus = new InMemoryBus(nameof(_timeoutBus),false);
+            _timeoutBus = new InMemoryBus(nameof(_timeoutBus), false);
             _laterService = new LaterService(_timeoutBus, TimeSource.System);
             _timeoutBus.Subscribe<DelaySendEnvelope>(_laterService);
             _laterService.Start();
 
-            _manager = new CommandManager(bus,_timeoutBus);
+            _manager = new CommandManager(bus, _timeoutBus);
             _timeoutBus.Subscribe<AckTimeout>(_manager);
             _timeoutBus.Subscribe<CompletionTimeout>(_manager);
 
@@ -38,7 +38,7 @@ namespace ReactiveDomain.Messaging.Bus {
         public void Send(Command command, string exceptionMsg = null, TimeSpan? responseTimeout = null, TimeSpan? ackTimeout = null) {
             if (command.IsCanceled) {
                 _publishQueue.Publish(command.Canceled());
-                throw new CommandCanceledException(command);
+                throw new CommandCanceledException(command.MsgId, command.GetType().FullName, Guid.Empty);
             }
 
             Execute(command, out var rslt, true, responseTimeout, ackTimeout);
@@ -46,9 +46,9 @@ namespace ReactiveDomain.Messaging.Bus {
 
             var fail = rslt as Fail;
             if (fail?.Exception != null)
-                throw new CommandException(exceptionMsg ?? fail.Exception.Message, fail.Exception, command);
+                throw new CommandException(exceptionMsg ?? fail.Exception.Message, fail.Exception, command.MsgId, command.GetType().FullName, Guid.Empty);
             else
-                throw new CommandException(exceptionMsg ?? $"{command.GetType().Name}: Failed", command);
+                throw new CommandException(exceptionMsg ?? $"{command.GetType().Name}: Failed", command.MsgId, command.GetType().FullName, Guid.Empty);
         }
         public bool TrySend(Command command,
             out CommandResponse response,
@@ -63,7 +63,7 @@ namespace ReactiveDomain.Messaging.Bus {
                 Execute(command, out response, true, responseTimeout, ackTimeout);
             }
             catch (Exception ex) {
-                response = command.Fail(ex);
+                response = command.Failed(ex);
             }
             return response is Success;
         }
@@ -99,12 +99,12 @@ namespace ReactiveDomain.Messaging.Bus {
                     responseTimeout ?? _slowCmdThreshold);
             }
             catch (CommandException ex) {
-                tcs?.SetResult(command.Fail(ex));
+                tcs?.SetResult(command.Failed(ex));
                 throw;
             }
             catch (Exception ex) {
-                tcs?.SetResult(command.Fail(ex));
-                throw new CommandException("Error executing command: ", ex, command);
+                tcs?.SetResult(command.Failed(ex));
+                throw new CommandException("Error executing command: ", ex, command.MsgId, command.GetType().FullName, Guid.Empty);
             }
             try {
                 //n.b. if this does not throw result will be set asynchronously 
@@ -113,7 +113,7 @@ namespace ReactiveDomain.Messaging.Bus {
                 _publishQueue.Publish(command);
             }
             catch (Exception ex) {
-                tcs.SetResult(command.Fail(ex));
+                tcs.SetResult(command.Failed(ex));
                 throw;
             }
 
