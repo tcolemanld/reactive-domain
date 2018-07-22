@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using ReactiveDomain.Messaging.Bus;
@@ -8,7 +9,7 @@ using Xunit;
 namespace ReactiveDomain.Messaging.Tests {
 
     // ReSharper disable once InconsistentNaming
-    public class when_using_command_handler :
+    public sealed class when_using_command_handler :
         IHandleCommand<TestCommands.Command1>,
         IHandleCommand<TestCommands.Command2>,
         IHandleCommand<TestCommands.Command3>,
@@ -18,8 +19,9 @@ namespace ReactiveDomain.Messaging.Tests {
         IHandle<AckCommand>,
         IHandle<Fail>,
         IHandle<Success>,
-        IHandle<Canceled> {
-        private readonly IBus _bus;
+        IHandle<Canceled>,
+        IDisposable {
+        private readonly InMemoryBus _bus;
         private long _cmd1Count;
         private long _cmd2Count;
         private long _cmd3Count;
@@ -52,19 +54,79 @@ namespace ReactiveDomain.Messaging.Tests {
         [Fact]
         public void must_have_return_bus_and_target() {
             Assert.Throws<ArgumentNullException>(
-                ()=>new CommandHandler<TestCommands.Command1>(null, this));
+                () => new CommandHandler<TestCommands.Command1>(null, this));
+            //null case for  IHandleCommand<TestCommands.Command1>
             Assert.Throws<ArgumentNullException>(
-                ()=>new CommandHandler<TestCommands.Command1>(_bus, null));
+                () => new CommandHandler<TestCommands.Command1>(_bus, (when_using_command_handler)null));
+            Assert.Throws<ArgumentNullException>(
+                () => new CommandHandler<TestCommands.Command1>(_bus, (Func<TestCommands.Command1, CommandResponse>)null));
+            Assert.Throws<ArgumentNullException>(
+                () => new CommandHandler<TestCommands.Command1>(_bus, (Func<TestCommands.Command1, bool>)null));
         }
         [Fact]
         public void can_be_called_directly() {
-            var cmdHandler = new CommandHandler<TestCommands.Command4>(_bus,this);
+            var cmdHandler = new CommandHandler<TestCommands.Command4>(_bus, this);
             var cmd = new TestCommands.Command4();
             //direct call (no bus subscription inbound)
             cmdHandler.Handle(cmd);
             Assert.Equal(1, _cmd4Count);
             Assert.Equal(1, _successCount);
             Assert.Equal(cmd.MsgId, _responseId);
+        }
+        [Fact]
+        [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
+        public void can_use_ad_hoc_func_cmd_response() {
+            var gotIt = 0L;
+            var cmdHandler = new CommandHandler<TestCommands.Command1>(
+                                    _bus, 
+                                     c => {
+                                         Interlocked.Increment(ref gotIt);
+                                         return c.Succeed();});
+
+            var cmd = new TestCommands.Command1();
+            
+            cmdHandler.Handle(cmd);
+            Assert.Equal(1,Interlocked.Read(ref gotIt));
+            Assert.Equal(1, _successCount);
+            Assert.Equal(cmd.MsgId, _responseId);
+
+        }
+        [Fact]
+        [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
+        public void can_use_ad_hoc_func_cmd_bool_success() {
+            var gotIt = 0L;
+            var cmdHandler = new CommandHandler<TestCommands.Command1>(
+                _bus, 
+                c => {
+                    Interlocked.Increment(ref gotIt);
+                    return true;
+                });
+
+            var cmd = new TestCommands.Command1();
+            
+            cmdHandler.Handle(cmd);
+            Assert.Equal(1,Interlocked.Read(ref gotIt));
+            Assert.Equal(1, _successCount);
+            Assert.Equal(cmd.MsgId, _responseId);
+
+        }
+        [Fact]
+        [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
+        public void can_use_ad_hoc_func_cmd_bool_fail() {
+            var gotIt = 0L;
+            var cmdHandler = new CommandHandler<TestCommands.Command1>(
+                _bus, 
+                c => {
+                    Interlocked.Increment(ref gotIt);
+                    return false;
+                });
+
+            var cmd = new TestCommands.Command1();
+            cmdHandler.Handle(cmd);
+            Assert.Equal(1,Interlocked.Read(ref gotIt));
+            Assert.Equal(1, _failCount);
+            Assert.Equal(cmd.MsgId, _responseId);
+
         }
         [Fact]
         public void command_messages_are_acked() {
@@ -106,39 +168,44 @@ namespace ReactiveDomain.Messaging.Tests {
         }
         [Fact]
         public void uncanceled_commands_succeed() {
-            var ts = new CancellationTokenSource();
-            var cmd = new TestCommands.CancelableCommand(ts.Token);
-            Task.Run(()=> _bus.Publish(cmd));
-            AssertEx.IsOrBecomesTrue(()=>_cancelCmdCount ==1);
-            _releaseCmd.Set();
-            AssertEx.IsOrBecomesTrue(()=>_successCount ==1);
-            Assert.Equal(0,_cancelCount);
+            using (var ts = new CancellationTokenSource()) {
+                var cmd = new TestCommands.CancelableCommand(ts.Token);
+                using (var t = Task.Run(() => _bus.Publish(cmd))) {
+                    AssertEx.IsOrBecomesTrue(() => _cancelCmdCount == 1);
+                    _releaseCmd.Set();
+                    AssertEx.IsOrBecomesTrue(() => _successCount == 1);
+                    Assert.Equal(0, _cancelCount);
+                }
+            }
         }
         [Fact]
         public void commands_can_be_canceled() {
-            var ts = new CancellationTokenSource();
-            var cmd = new TestCommands.CancelableCommand(ts.Token);
-            Task.Run(()=> _bus.Publish(cmd));
-            AssertEx.IsOrBecomesTrue(()=>_cancelCmdCount ==1);
-            ts.Cancel();
-            _releaseCmd.Set();
-            AssertEx.IsOrBecomesTrue(()=>_cancelCount ==1);
-            Assert.Equal(0, _successCount);
-            Assert.Equal(_cancelId, cmd.MsgId);
+            using (var ts = new CancellationTokenSource()) {
+                var cmd = new TestCommands.CancelableCommand(ts.Token);
+                using (var t = Task.Run(() => _bus.Publish(cmd))) {
+                    AssertEx.IsOrBecomesTrue(() => _cancelCmdCount == 1);
+                    ts.Cancel();
+                    _releaseCmd.Set();
+                    AssertEx.IsOrBecomesTrue(() => _cancelCount == 1);
+                    Assert.Equal(0, _successCount);
+                    Assert.Equal(_cancelId, cmd.MsgId);
+                }
+            }
         }
-       
+
         [Fact]
         public void can_pre_cancel_commands() {
-            var ts = new CancellationTokenSource();
-            var cmd = new TestCommands.CancelableCommand(ts.Token);
-            ts.Cancel();
-             _bus.Publish(cmd);
-            Assert.Equal(0,_cancelCmdCount);
-            Assert.Equal(1,_cancelCount);
-            Assert.Equal(0, _successCount);
-            Assert.Equal(_cancelId, cmd.MsgId);
+            using (var ts = new CancellationTokenSource()) {
+                var cmd = new TestCommands.CancelableCommand(ts.Token);
+                ts.Cancel();
+                _bus.Publish(cmd);
+                Assert.Equal(0, _cancelCmdCount);
+                Assert.Equal(1, _cancelCount);
+                Assert.Equal(0, _successCount);
+                Assert.Equal(_cancelId, cmd.MsgId);
+            }
         }
-        
+
         public CommandResponse Handle(TestCommands.Command1 command) {
             Interlocked.Increment(ref _cmd1Count);
             return command.Succeed();
@@ -188,6 +255,9 @@ namespace ReactiveDomain.Messaging.Tests {
         public class CommandTestException : Exception { }
 
 
-    
+        public void Dispose() {
+            _releaseCmd?.Dispose();
+            _bus?.Dispose();
+        }
     }
 }

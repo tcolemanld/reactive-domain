@@ -100,7 +100,7 @@ namespace ReactiveDomain.Testing.EventStore {
 
                 AssertEx.IsOrBecomesTrue(() => liveProcessingStarted, 2000, msg: "Failed handle live processing start");
                 AssertEx.IsOrBecomesTrue(() => Interlocked.Read(ref evtCount) == 2, 5000, msg: $"Expected 2 Events got { Interlocked.Read(ref evtCount)}");
-                Task.Run(()=> AppendEvents(5, conn, streamName));
+                Task.Run(() => AppendEvents(5, conn, streamName));
                 AssertEx.IsOrBecomesTrue(() => Interlocked.Read(ref evtCount) == 7, 5000, msg: $"Expected 7 Events got { Interlocked.Read(ref evtCount)}");
                 AppendEvents(5, conn, streamName);
                 AssertEx.IsOrBecomesTrue(() => Interlocked.Read(ref evtCount) == 12, 5000, msg: $"Expected 12 Events got { Interlocked.Read(ref evtCount)}");
@@ -134,7 +134,7 @@ namespace ReactiveDomain.Testing.EventStore {
 
                 var sub = conn.SubscribeToAll(
                                         evt => {
-                                            if (string.CompareOrdinal(evt.EventType, nameof(SubscriptionTestEvent)) == 0) {
+                                            if (string.CompareOrdinal(evt?.EventType ?? "", nameof(SubscriptionTestEvent)) == 0) {
                                                 Interlocked.Increment(ref evtCount);
                                             }
                                         },
@@ -182,7 +182,7 @@ namespace ReactiveDomain.Testing.EventStore {
         [Fact]
         public void can_subscribe_to_category_stream() {
             var streamTypeName = _streamNameBuilder.GenerateForCategory(typeof(STestCategoryAggregate));
-            var streams = new []
+            var streams = new[]
             {
                 _streamNameBuilder.GenerateForAggregate(typeof(STestCategoryAggregate), Guid.NewGuid()),
                 _streamNameBuilder.GenerateForAggregate(typeof(STestCategoryAggregate), Guid.NewGuid())
