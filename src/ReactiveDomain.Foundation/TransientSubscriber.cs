@@ -4,11 +4,9 @@ using ReactiveDomain.Foundation.Commands;
 using ReactiveDomain.Messaging;
 using ReactiveDomain.Messaging.Bus;
 using ReactiveDomain.Util;
-using ReactiveUI;
 
-// ReSharper disable once CheckNamespace
 namespace ReactiveDomain.Foundation {
-    public abstract class TransientSubscriber : ReactiveObject, IDisposable {
+    public abstract class TransientSubscriber : IDisposable {
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
         private readonly IBus _bus;
 
