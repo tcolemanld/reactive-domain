@@ -75,18 +75,67 @@ namespace ReactiveDomain.Messaging.Tests {
         }
         [Fact]
         [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
+        public void will_notify_on_create_and_dispose() {
+            var gotCmd = 0L;
+            var registered = 0L;
+            var unregistered = 0L;
+            string regCommandName = null;
+            string unRegCommandName = null;
+            var regId = Guid.Empty;
+            var unRegId = Guid.Empty;
+            var bus = new InMemoryBus("temp");
+            bus.Subscribe(new AdHocHandler<CommandHandlerRegistered>(
+                                msg => {
+                                    Interlocked.Increment(ref registered);
+                                    regCommandName = msg.CommandName;
+                                    regId = msg.HandlerId;
+                                }));
+            bus.Subscribe(new AdHocHandler<CommandHandlerUnregistered>(
+                                msg => {
+                                    Interlocked.Increment(ref unregistered);
+                                    unRegCommandName = msg.CommandName;
+                                    unRegId = msg.HandlerId;
+                                }));
+
+            var handler = new CommandHandler<TestCommands.Command1>(bus, cmd => Interlocked.Increment(ref gotCmd) == 0);
+            handler.Handle(new TestCommands.Command1());
+            Assert.Equal(1, Interlocked.Read(ref gotCmd));
+            Assert.Equal(1, Interlocked.Read(ref registered));
+            Assert.Equal(typeof(TestCommands.Command1).FullName,regCommandName);
+            Assert.Equal(0, Interlocked.Read(ref unregistered));
+            handler.Dispose();
+            Assert.Equal(1, Interlocked.Read(ref unregistered));
+            Assert.Equal(typeof(TestCommands.Command1).FullName,unRegCommandName);
+            Assert.Equal(regId,unRegId);
+        }
+        [Fact]
+        [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
+        public void will_not_process_after_dispose() {
+            var gotCmd = 0L;
+            var bus = new InMemoryBus("temp");
+            var handler = new CommandHandler<TestCommands.Command1>(bus, cmd => Interlocked.Increment(ref gotCmd) == 0);
+            handler.Handle(new TestCommands.Command1());
+            Assert.Equal(1, Interlocked.Read(ref gotCmd));
+            handler.Dispose();
+            handler.Handle(new TestCommands.Command1());
+            Assert.Equal(1, Interlocked.Read(ref gotCmd));
+
+        }
+        [Fact]
+        [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
         public void can_use_ad_hoc_func_cmd_response() {
             var gotIt = 0L;
             var cmdHandler = new CommandHandler<TestCommands.Command1>(
-                                    _bus, 
+                                    _bus,
                                      c => {
                                          Interlocked.Increment(ref gotIt);
-                                         return c.Succeed();});
+                                         return c.Succeed();
+                                     });
 
             var cmd = new TestCommands.Command1();
-            
+
             cmdHandler.Handle(cmd);
-            Assert.Equal(1,Interlocked.Read(ref gotIt));
+            Assert.Equal(1, Interlocked.Read(ref gotIt));
             Assert.Equal(1, _successCount);
             Assert.Equal(cmd.MsgId, _responseId);
 
@@ -96,16 +145,16 @@ namespace ReactiveDomain.Messaging.Tests {
         public void can_use_ad_hoc_func_cmd_bool_success() {
             var gotIt = 0L;
             var cmdHandler = new CommandHandler<TestCommands.Command1>(
-                _bus, 
+                _bus,
                 c => {
                     Interlocked.Increment(ref gotIt);
                     return true;
                 });
 
             var cmd = new TestCommands.Command1();
-            
+
             cmdHandler.Handle(cmd);
-            Assert.Equal(1,Interlocked.Read(ref gotIt));
+            Assert.Equal(1, Interlocked.Read(ref gotIt));
             Assert.Equal(1, _successCount);
             Assert.Equal(cmd.MsgId, _responseId);
 
@@ -115,7 +164,7 @@ namespace ReactiveDomain.Messaging.Tests {
         public void can_use_ad_hoc_func_cmd_bool_fail() {
             var gotIt = 0L;
             var cmdHandler = new CommandHandler<TestCommands.Command1>(
-                _bus, 
+                _bus,
                 c => {
                     Interlocked.Increment(ref gotIt);
                     return false;
@@ -123,7 +172,7 @@ namespace ReactiveDomain.Messaging.Tests {
 
             var cmd = new TestCommands.Command1();
             cmdHandler.Handle(cmd);
-            Assert.Equal(1,Interlocked.Read(ref gotIt));
+            Assert.Equal(1, Interlocked.Read(ref gotIt));
             Assert.Equal(1, _failCount);
             Assert.Equal(cmd.MsgId, _responseId);
 
@@ -170,7 +219,7 @@ namespace ReactiveDomain.Messaging.Tests {
         public void uncanceled_commands_succeed() {
             using (var ts = new CancellationTokenSource()) {
                 var cmd = new TestCommands.CancelableCommand(ts.Token);
-                using (var t = Task.Run(() => _bus.Publish(cmd))) {
+                using (var _ = Task.Run(() => _bus.Publish(cmd))) {
                     AssertEx.IsOrBecomesTrue(() => _cancelCmdCount == 1);
                     _releaseCmd.Set();
                     AssertEx.IsOrBecomesTrue(() => _successCount == 1);
@@ -182,7 +231,7 @@ namespace ReactiveDomain.Messaging.Tests {
         public void commands_can_be_canceled() {
             using (var ts = new CancellationTokenSource()) {
                 var cmd = new TestCommands.CancelableCommand(ts.Token);
-                using (var t = Task.Run(() => _bus.Publish(cmd))) {
+                using (var _ = Task.Run(() => _bus.Publish(cmd))) {
                     AssertEx.IsOrBecomesTrue(() => _cancelCmdCount == 1);
                     ts.Cancel();
                     _releaseCmd.Set();
