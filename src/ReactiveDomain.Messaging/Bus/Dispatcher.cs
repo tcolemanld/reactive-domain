@@ -66,11 +66,11 @@ namespace ReactiveDomain.Messaging.Bus {
         /// <param name="responseTimeout"></param>
         /// <param name="ackTimeout"></param>
         /// <returns>Command enqueued</returns>
-        public bool TrySendAsync(
+        public void SendAsync(
                         Command command,
                         TimeSpan? responseTimeout = null,
                         TimeSpan? ackTimeout = null)
-            => _queuedPublisher.TrySendAsync(command, responseTimeout, ackTimeout);
+            => _queuedPublisher.SendAsync(command, responseTimeout, ackTimeout);
 
         public IDisposable Subscribe<T>(IHandleCommand<T> handler) where T : Command {
             if (HasSubscriberFor<T>())

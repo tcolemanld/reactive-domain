@@ -31,10 +31,7 @@ namespace ReactiveDomain.Messaging.Bus
             return false;
         }
 
-        public bool TrySendAsync(Command command, TimeSpan? responseTimeout = null, TimeSpan? ackTimeout = null)
-        {
-            return false;
-        }
+        public void SendAsync(Command command, TimeSpan? responseTimeout = null, TimeSpan? ackTimeout = null){}
 
         public IDisposable Subscribe<T>(IHandleCommand<T> handler) where T : Command
         {

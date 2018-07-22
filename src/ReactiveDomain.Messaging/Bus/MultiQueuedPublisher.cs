@@ -68,20 +68,13 @@ namespace ReactiveDomain.Messaging.Bus {
             return response is Success;
         }
 
-        public bool TrySendAsync(Command command, TimeSpan? responseTimeout = null, TimeSpan? ackTimeout = null) {
-            try {
+        public void SendAsync(Command command, TimeSpan? responseTimeout = null, TimeSpan? ackTimeout = null) {
+           
                 if (command.IsCanceled) {
                     var response = command.Canceled();
                     _publishQueue.Publish(response);
-                    return false;
                 }
                 Execute(command, out var _, false, responseTimeout, ackTimeout);
-            }
-            catch (Exception) {
-                return false;
-            }
-            return true;
-
         }
 
         private void Execute(

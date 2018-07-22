@@ -45,10 +45,10 @@ namespace ReactiveDomain.Messaging.Bus
             return _target.TrySend(command, out response, responseTimeout, ackTimeout);
         }
 
-        public bool TrySendAsync(Command command, TimeSpan? responseTimeout = null, TimeSpan? ackTimeout = null)
+        public void SendAsync(Command command, TimeSpan? responseTimeout = null, TimeSpan? ackTimeout = null)
         {
-            if (RedirectToNull) return true;
-            return _target?.TrySendAsync(command, responseTimeout, ackTimeout) ?? false;
+            if (RedirectToNull) return;
+            _target?.SendAsync(command, responseTimeout, ackTimeout);
         }
 
         #endregion

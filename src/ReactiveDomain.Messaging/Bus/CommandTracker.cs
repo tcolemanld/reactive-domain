@@ -4,13 +4,40 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ReactiveDomain.Messaging.Bus
-{
-    public class CommandTracker
+namespace ReactiveDomain.Messaging.Bus {
+    public sealed class CommandTracker : ICommandPublisher
     {
+        private Command _trackedCommand; 
         public CommandTracker() { }
-            
 
+        #region ICommandPublisher
+        public void Send(Command command, string exceptionMsg = null, TimeSpan? responseTimeout = null, TimeSpan? ackTimeout = null) {
+            if(_trackedCommand != null) {
+                throw new InvalidOperationException("Already tracking a command");
+            }
+            _trackedCommand = command;
+
+        }
+
+        public bool TrySend(Command command, out CommandResponse response, TimeSpan? responseTimeout = null,
+                            TimeSpan? ackTimeout = null) {
+            if(_trackedCommand != null) {
+                throw new InvalidOperationException("Already tracking a command");
+            }
+            _trackedCommand = command;
+            response = null;
+            return false;
+        }
+
+        public void SendAsync(Command command, TimeSpan? responseTimeout = null, TimeSpan? ackTimeout = null) {
+            if(_trackedCommand != null) {
+                throw new InvalidOperationException("Already tracking a command");
+            }
+            _trackedCommand = command;
+        }
+        #endregion
+
+        #region Messages
         /// <summary>
         /// Indicates receipt of a command message at the command handler.
         /// Does not indicate success or failure of command processing.
@@ -57,5 +84,9 @@ namespace ReactiveDomain.Messaging.Bus
                 CommandId = commandId;
             }
         }
+
+        #endregion
+
+        
     }
 }
