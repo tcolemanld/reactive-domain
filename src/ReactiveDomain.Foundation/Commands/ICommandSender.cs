@@ -10,7 +10,7 @@ namespace ReactiveDomain.Foundation.Commands {
         ///                 useful for displaying error information in UI applications</param>
         /// <param name="completionTimeout">How long to wait for completion before throwing a timeout exception and sending a cancel</param>
         /// <param name="ackTimeout">How long to wait for processing to start before throwing a timeout exception and sending a cancel</param>
-        void Send(Command command, string exceptionMsg = null, TimeSpan? completionTimeout = null, TimeSpan? ackTimeout = null);
+        void Send(Command command, string exceptionMsg = null, TimeSpan? ackTimeout = null, TimeSpan? completionTimeout = null);
 
         /// <summary>
         /// TrySend will block the calling thread and returns the command response via the out parameter.
@@ -21,7 +21,7 @@ namespace ReactiveDomain.Foundation.Commands {
         /// <param name="completionTimeout">How long to wait for completion before throwing a timeout exception and sending a cancel</param>
         /// <param name="ackTimeout">How long to wait for processing to start before throwing a timeout exception and sending a cancel</param>
         /// <returns>true if command response is of type Success, False if CommandResponse is of type Fail</returns>
-        bool TrySend(Command command, out CommandResponse response, TimeSpan? completionTimeout = null, TimeSpan? ackTimeout = null);
+        bool TrySend(Command command, out CommandResponse response, TimeSpan? ackTimeout = null, TimeSpan? completionTimeout = null);
 
         /// <summary>
         /// SendAsync publishes the command and returns. 
@@ -38,6 +38,6 @@ namespace ReactiveDomain.Foundation.Commands {
         /// <param name="command">the command to send</param>
         /// <param name="completionTimeout">How long to wait for completion before throwing a timeout exception and sending a cancel</param>
         /// <param name="ackTimeout">How long to wait for processing to start before throwing a timeout exception and sending a cancel</param> 
-        void SendAsync(Command command, TimeSpan? completionTimeout = null, TimeSpan? ackTimeout = null);
+        void SendAsync(Command command, TimeSpan? ackTimeout = null, TimeSpan? completionTimeout = null);
     }
 }

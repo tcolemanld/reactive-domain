@@ -14,7 +14,7 @@ namespace ReactiveDomain.Foundation.Commands {
         private readonly Command _command;
         private readonly IBus _publishBus;
         private readonly IBus _timeoutBus;
-        private readonly TimeSpan _responseTimeout;
+        private readonly TimeSpan _completionTimeout;
         private readonly TimeSpan _ackTimeout;
         private readonly TimeSource _timeSource;
         private Guid? _handlerId;
@@ -40,8 +40,8 @@ namespace ReactiveDomain.Foundation.Commands {
                 Command command,
                 IBus publishBus,
                 IBus timeoutBus,
-                TimeSpan responseTimeout,
                 TimeSpan ackTimeout,
+                TimeSpan completionTimeout,
                 TimeSource timeSource) : this() {
             Ensure.NotNull(command, nameof(command));
             Ensure.NotNull(publishBus, nameof(publishBus));
@@ -49,7 +49,7 @@ namespace ReactiveDomain.Foundation.Commands {
             _command = command;
             _publishBus = publishBus;
             _timeoutBus = timeoutBus;
-            _responseTimeout = responseTimeout;
+            _completionTimeout = completionTimeout;
             _ackTimeout = ackTimeout;
             _timeSource = timeSource;
             Raise(new Started());
@@ -156,7 +156,6 @@ namespace ReactiveDomain.Foundation.Commands {
                 case States.Disposed:
                     return;
                 case States.Completed:
-                    //??? Hmm what should we do here?
                     _tcs?.Task?.Dispose();
                     break;
                 case States.Started:
@@ -199,7 +198,7 @@ namespace ReactiveDomain.Foundation.Commands {
                 return false;
             }
             _timeoutBus.Publish(new DelaySendEnvelope(_timeSource, _ackTimeout, new AckTimeout(_command.MsgId)));
-            _timeoutBus.Publish(new DelaySendEnvelope(_timeSource, _responseTimeout, new CompletionTimeout(_command.MsgId)));
+            _timeoutBus.Publish(new DelaySendEnvelope(_timeSource, _completionTimeout, new CompletionTimeout(_command.MsgId)));
             return true;
         }
         private void NotifyComplete() {

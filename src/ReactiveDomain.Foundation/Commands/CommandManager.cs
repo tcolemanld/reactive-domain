@@ -37,18 +37,20 @@ namespace ReactiveDomain.Foundation.Commands {
 
             _commands = new ConcurrentDictionary<Guid, CommandTracker>();
         }
-        public bool TrySend(Command command, out CommandResponse response, TimeSpan? responseTimeout = null,
-                            TimeSpan? ackTimeout = null) {
+        public bool TrySend(Command command, 
+                            out CommandResponse response,
+                            TimeSpan? ackTimeout = null, 
+                            TimeSpan? completionTimeout = null) {
             try {
-                response = Send(command, true, responseTimeout, ackTimeout);
+                response = Send(command, true, ackTimeout, completionTimeout);
             }
             catch (Exception ex) {
                 response = command.Failed(ex);
             }
             return response is Success;
         }
-        public void Send(Command command, string exceptionMsg = null, TimeSpan? responseTimeout = null, TimeSpan? ackTimeout = null) {
-            var response = Send(command, true, responseTimeout, ackTimeout);
+        public void Send(Command command, string exceptionMsg = null, TimeSpan? ackTimeout = null, TimeSpan? completionTimeout = null) {
+            var response = Send(command, true, ackTimeout, completionTimeout);
             switch (response) {
                 case Success _:
                     return;
@@ -58,14 +60,14 @@ namespace ReactiveDomain.Foundation.Commands {
                     throw new CommandException(exceptionMsg ?? $"{command.GetType().Name}: Failed", command.MsgId, command.GetType().FullName, Guid.Empty);
             }
         }
-        public void SendAsync(Command command, TimeSpan? responseTimeout = null, TimeSpan? ackTimeout = null) {
-            Send(command, false, responseTimeout, ackTimeout);
+        public void SendAsync(Command command, TimeSpan? ackTimeout = null, TimeSpan? completionTimeout = null) {
+            Send(command, false, ackTimeout, completionTimeout);
         }
         private CommandResponse Send(
                     Command command,
                     bool blocking,
-                    TimeSpan? responseTimeout = null,
-                    TimeSpan? ackTimeout = null) {
+                    TimeSpan? ackTimeout = null,
+                    TimeSpan? completionTimeout = null) {
 
             if (command.IsCanceled) { return command.Canceled(); }
 
@@ -74,8 +76,8 @@ namespace ReactiveDomain.Foundation.Commands {
                                         command,
                                         _bus,
                                         _timeoutBus,
-                                        responseTimeout ?? TimeSpan.FromMilliseconds(500),
                                         ackTimeout ?? TimeSpan.FromMilliseconds(100),
+                                        completionTimeout ?? TimeSpan.FromMilliseconds(500),
                                         _timeSource);
                 _commands.AddOrUpdate(command.MsgId, id => tracker, (id, tr) => throw new InvalidOperationException("Already tracking Command"));
             }
