@@ -5,7 +5,7 @@ using ReactiveDomain.Messaging.Bus;
 using ReactiveDomain.Util;
 
 namespace ReactiveDomain.Foundation.Commands {
-    public sealed class CommandTracker :
+    public sealed class CommandTracker : EventDrivenStateMachine,
                                         IHandle<CommandResponse>,
                                         IHandle<CommandTracker.AckCommand>,
                                         IHandle<CommandTracker.AckTimeout>,
@@ -27,14 +27,22 @@ namespace ReactiveDomain.Foundation.Commands {
             Completed,
             Disposed
         }
-
+        private CommandTracker() {
+            Register<Started>(_ => _state = States.Started);
+            Register<Sent>(_ => _state = States.Sent);
+            Register<Acked>(_ => _state = States.Acked);
+            Register<Canceled>(_ => _state = States.Completed);
+            Register<Completed>(_ => _state = States.Completed);
+            Register<Failed>(_ => _state = States.Completed);
+            Register<Disposed>(_ => _state = States.Disposed);
+        }
         public CommandTracker(
                 Command command,
                 IBus publishBus,
                 IBus timeoutBus,
                 TimeSpan responseTimeout,
                 TimeSpan ackTimeout,
-                TimeSource timeSource) {
+                TimeSource timeSource) : this() {
             Ensure.NotNull(command, nameof(command));
             Ensure.NotNull(publishBus, nameof(publishBus));
             Ensure.NotNull(timeoutBus, nameof(timeoutBus));
@@ -44,82 +52,165 @@ namespace ReactiveDomain.Foundation.Commands {
             _responseTimeout = responseTimeout;
             _ackTimeout = ackTimeout;
             _timeSource = timeSource;
-            _state = States.Started;
+            Raise(new Started());
         }
 
-        //todo turn this into a process manager
+
         public CommandResponse Send(bool blocking) {
-            if (_state != States.Started) { throw new InvalidOperationException(); }
+            switch (_state) {
+                case States.Disposed:
+                case States.Completed:
+                case States.Acked:
+                case States.Sent:
+                    return FailCommand(new InvalidOperationException("Received Send sent message"));
+                case States.Started:
+                    if (!TryPublish(out var response)) { return FailCommand(response); }
+                    Raise(new Sent());
+                    if (!blocking) { return null; }
+                    return Block();
+                default:
+                    return FailCommand(new InvalidOperationException($"Unknown State {_state}"));
+            }
+        }
+
+        public void Handle(AckCommand message) {
+            switch (_state) {
+                case States.Disposed:
+                case States.Completed:
+                case States.Acked:
+                    return;
+                case States.Started:
+                    FailCommand(new InvalidOperationException("Received Ack on unsent message"));
+                    break;
+                case States.Sent:
+                    _handlerId = message.HandlerId;
+                    Raise(new Acked());
+                    break;
+                default:
+                    FailCommand(new InvalidOperationException($"Unknown State {_state}"));
+                    break;
+            }
+        }
+
+        public void Handle(CommandResponse message) {
+            switch (_state) {
+                case States.Disposed:
+                case States.Completed:
+                    return;
+                case States.Started:
+                    FailCommand(new InvalidOperationException("Received response on unsent message"));
+                    break;
+                case States.Acked:
+                case States.Sent:
+                    _tcs.TrySetResult(message);
+                    Raise(new Completed());
+                    NotifyComplete();
+                    break;
+                default:
+                    FailCommand(new InvalidOperationException($"Unknown State {_state}"));
+                    break;
+            }
+        }
+
+        public void Handle(AckTimeout message) {
+            switch (_state) {
+                case States.Disposed:
+                case States.Completed:
+                case States.Acked:
+                    return;
+                case States.Started:
+                    FailCommand(new InvalidOperationException("Received Ack Timeout on unsent message"));
+                    break;
+                case States.Sent:
+                    Cancel();
+                    NotifyComplete();
+                    Raise(new Canceled());
+                    break;
+                default:
+                    FailCommand(new InvalidOperationException($"Unknown State {_state}"));
+                    break;
+            }
+        }
+
+        public void Handle(CompletionTimeout message) {
+            switch (_state) {
+                case States.Disposed:
+                case States.Completed:
+                    return;
+                case States.Started:
+                    FailCommand(new InvalidOperationException("Received Timeout on unsent message"));
+                    break;
+                case States.Acked:
+                case States.Sent:
+                    Cancel();
+                    NotifyComplete();
+                    Raise(new Canceled());
+                    break;
+                default:
+                    FailCommand(new InvalidOperationException($"Unknown State {_state}"));
+                    break;
+            }
+        }
+        public void Dispose() {
+            switch (_state) {
+                case States.Disposed:
+                    return;
+                case States.Completed:
+                    //??? Hmm what should we do here?
+                    _tcs?.Task?.Dispose();
+                    break;
+                case States.Started:
+                case States.Acked:
+                case States.Sent:
+                    Cancel();
+                    break;
+            }
+            Raise(new Disposed());
+        }
+        private CommandResponse FailCommand(Exception ex) {
+            return FailCommand(_command.Failed(ex));
+        }
+        private CommandResponse FailCommand(CommandResponse response) {
+            _tcs?.TrySetResult(response);
+            Raise(new Failed());
+            NotifyComplete();
+            return response;
+        }
+        private CommandResponse Block() {
+            _tcs = new TaskCompletionSource<CommandResponse>();
+            try {
+                //blocking caller until result is set 
+                return _tcs.Task.Result;
+            }
+            catch (AggregateException aggEx) {
+                Raise(new Failed());
+                NotifyComplete();
+                return _command.Failed(aggEx.InnerException);
+            }
+        }
+        private bool TryPublish(out CommandResponse response) {
+            response = null;
             try {
                 //n.b. if this does not throw result will be set asynchronously 
                 _publishBus.Publish(_command);
             }
             catch (Exception ex) {
-                _state = States.Completed;
-                _timeoutBus.Publish(new CommandComplete(_command.MsgId));
-                return _command.Failed(ex);
+                response = _command.Failed(ex);
+                return false;
             }
             _timeoutBus.Publish(new DelaySendEnvelope(_timeSource, _ackTimeout, new AckTimeout(_command.MsgId)));
             _timeoutBus.Publish(new DelaySendEnvelope(_timeSource, _responseTimeout, new CompletionTimeout(_command.MsgId)));
-            if (!blocking) { return null; }
-            _tcs = new TaskCompletionSource<CommandResponse>();
-            try {
-                //blocking caller until result is set 
-                var rslt = _tcs.Task.Result;
-                _state = States.Completed;
-                _timeoutBus.Publish(new CommandComplete(_command.MsgId));
-                return rslt;
-            }
-            catch (AggregateException aggEx) {
-                _state = States.Completed;
-                _timeoutBus.Publish(new CommandComplete(_command.MsgId));
-                return _command.Failed(aggEx.InnerException);
-            }
-
+            return true;
         }
-
-        public void Handle(AckCommand message) {
-            if (_state == States.Sent) { _state = States.Acked; }
-
-            _handlerId = message.HandlerId;
+        private void NotifyComplete() {
+            _publishBus.Publish(new CommandComplete(_command.MsgId));
         }
-
-        public void Handle(CommandResponse message) {
-            _tcs?.SetResult(message);
-            _state = States.Completed;
-            _timeoutBus.Publish(new CommandComplete(_command.MsgId));
-        }
-
-        public void Handle(AckTimeout message) {
-            if (_state != States.Sent) { return; }
-
+        private void Cancel() {
             _publishBus.Publish(new CommandCancelRequest(_command.MsgId, _command.GetType().FullName, _handlerId));
-            _tcs?.SetResult(_command.Canceled());
-            _state = States.Completed;
-            _timeoutBus.Publish(new CommandComplete(_command.MsgId));
+            _tcs?.TrySetResult(_command.Canceled());
         }
 
-        public void Handle(CompletionTimeout message) {
-            if (_state == States.Completed) { return; }
-
-            _publishBus.Publish(new CommandCancelRequest(_command.MsgId, _command.GetType().FullName, _handlerId));
-            _tcs?.SetResult(_command.Canceled());
-            _state = States.Completed;
-            _timeoutBus.Publish(new CommandComplete(_command.MsgId));
-        }
-
-
-        public void Dispose() {
-            if (_state == States.Disposed) { return; }
-           
-            if (_state != States.Completed) {
-                _publishBus.Publish(new CommandCancelRequest(_command.MsgId, _command.GetType().FullName, _handlerId));
-                _tcs?.SetResult(_command.Canceled());
-            }
-            //??? Hmm what should we do here?
-            _tcs?.Task?.Dispose();
-            _state = States.Disposed;
-        }
+        
 
         #region Messages
         /// <summary>
@@ -188,6 +279,13 @@ namespace ReactiveDomain.Foundation.Commands {
                 HandlerId = handlerId;
             }
         }
+        class Started : Message { }
+        class Sent : Message { }
+        class Acked : Message { }
+        class Completed : Message { }
+        class Canceled : Message { }
+        class Failed : Message { }
+        class Disposed : Message { }
         #endregion
 
 
