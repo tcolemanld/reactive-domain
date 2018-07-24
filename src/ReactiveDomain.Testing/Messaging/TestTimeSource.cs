@@ -6,6 +6,9 @@ using ReactiveDomain.Messaging.Bus;
 namespace ReactiveDomain.Testing {
     public class TestTimeSource : ITimeSource {
         private long _virtualTime;
+        public void AdvanceTime(TimeSpan timeSpan) {
+            AdvanceTime((long)timeSpan.TotalMilliseconds);
+        }
         public void AdvanceTime(long msDistance) {
             if (msDistance < 0) { throw new ArgumentOutOfRangeException(); }
             _virtualTime += msDistance;

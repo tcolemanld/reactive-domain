@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using ReactiveDomain.Messaging;
 using ReactiveDomain.Messaging.Bus;
 using ReactiveDomain.Util;
@@ -7,16 +8,16 @@ using ReactiveDomain.Util;
 namespace ReactiveDomain.Foundation.Commands {
     public sealed class CommandTracker : EventDrivenStateMachine,
                                         IHandle<CommandResponse>,
-                                        IHandle<CommandTracker.AckCommand>,
-                                        IHandle<CommandTracker.AckTimeout>,
-                                        IHandle<CommandTracker.CompletionTimeout>,
+                                        IHandle<CommandTracker.CommandReceived>,
+                                        IHandle<CommandTracker.CommandReceiptTimeoutExpired>,
+                                        IHandle<CommandTracker.CommandCompletionTimeoutExpired>,
                                         IDisposable {
         private readonly Command _command;
         private readonly IBus _publishBus;
         private readonly IBus _timeoutBus;
         private readonly TimeSpan _completionTimeout;
         private readonly TimeSpan _ackTimeout;
-        private readonly TimeSource _timeSource;
+        private readonly ITimeSource _timeSource;
         private Guid? _handlerId;
         private TaskCompletionSource<CommandResponse> _tcs;
         private States _state;
@@ -42,7 +43,7 @@ namespace ReactiveDomain.Foundation.Commands {
                 IBus timeoutBus,
                 TimeSpan ackTimeout,
                 TimeSpan completionTimeout,
-                TimeSource timeSource) : this() {
+                ITimeSource timeSource) : this() {
             Ensure.NotNull(command, nameof(command));
             Ensure.NotNull(publishBus, nameof(publishBus));
             Ensure.NotNull(timeoutBus, nameof(timeoutBus));
@@ -56,7 +57,7 @@ namespace ReactiveDomain.Foundation.Commands {
         }
 
 
-        public CommandResponse Send(bool blocking) {
+        public CommandResponse Send(bool blocking = true) {
             switch (_state) {
                 case States.Disposed:
                 case States.Completed:
@@ -73,7 +74,7 @@ namespace ReactiveDomain.Foundation.Commands {
             }
         }
 
-        public void Handle(AckCommand message) {
+        public void Handle(CommandReceived message) {
             switch (_state) {
                 case States.Disposed:
                 case States.Completed:
@@ -112,7 +113,7 @@ namespace ReactiveDomain.Foundation.Commands {
             }
         }
 
-        public void Handle(AckTimeout message) {
+        public void Handle(CommandReceiptTimeoutExpired message) {
             switch (_state) {
                 case States.Disposed:
                 case States.Completed:
@@ -122,7 +123,7 @@ namespace ReactiveDomain.Foundation.Commands {
                     FailCommand(new InvalidOperationException("Received Ack Timeout on unsent message"));
                     break;
                 case States.Sent:
-                    Cancel();
+                    CancelAck();
                     NotifyComplete();
                     Raise(new Canceled());
                     break;
@@ -132,7 +133,7 @@ namespace ReactiveDomain.Foundation.Commands {
             }
         }
 
-        public void Handle(CompletionTimeout message) {
+        public void Handle(CommandCompletionTimeoutExpired message) {
             switch (_state) {
                 case States.Disposed:
                 case States.Completed:
@@ -142,7 +143,7 @@ namespace ReactiveDomain.Foundation.Commands {
                     break;
                 case States.Acked:
                 case States.Sent:
-                    Cancel();
+                    CancelCompletion();
                     NotifyComplete();
                     Raise(new Canceled());
                     break;
@@ -161,7 +162,7 @@ namespace ReactiveDomain.Foundation.Commands {
                 case States.Started:
                 case States.Acked:
                 case States.Sent:
-                    Cancel();
+                    Cancel(new ObjectDisposedException(nameof(CommandTracker)));
                     break;
             }
             Raise(new Disposed());
@@ -197,19 +198,29 @@ namespace ReactiveDomain.Foundation.Commands {
                 response = _command.Failed(ex);
                 return false;
             }
-            _timeoutBus.Publish(new DelaySendEnvelope(_timeSource, _ackTimeout, new AckTimeout(_command.MsgId)));
-            _timeoutBus.Publish(new DelaySendEnvelope(_timeSource, _completionTimeout, new CompletionTimeout(_command.MsgId)));
+            _timeoutBus.Publish(new DelaySendEnvelope(_timeSource, _ackTimeout, new CommandReceiptTimeoutExpired(_command.MsgId)));
+            _timeoutBus.Publish(new DelaySendEnvelope(_timeSource, _completionTimeout, new CommandCompletionTimeoutExpired(_command.MsgId)));
             return true;
         }
         private void NotifyComplete() {
-            _publishBus.Publish(new CommandComplete(_command.MsgId));
+            _publishBus.Publish(new CommandProcessingCompleted(_command.MsgId));
         }
-        private void Cancel() {
-            _publishBus.Publish(new CommandCancelRequest(_command.MsgId, _command.GetType().FullName, _handlerId));
-            _tcs?.TrySetResult(_command.Canceled());
+        private void Cancel(Exception ex = null) {
+            _publishBus.Publish(new CommandCancellationRequested(_command.MsgId, _command.GetType().FullName, _handlerId));
+            _tcs?.TrySetResult(_command.Canceled(_handlerId, ex));
         }
 
-        
+        private void CancelAck() {
+            _publishBus.Publish(new CommandCancellationRequested(_command.MsgId, _command.GetType().FullName, _handlerId));
+            _tcs?.TrySetResult(_command.CanceledAckTimeout(_handlerId, new TimeoutException()));
+        }
+
+        private void CancelCompletion() {
+            _publishBus.Publish(new CommandCancellationRequested(_command.MsgId, _command.GetType().FullName, _handlerId));
+            _tcs?.TrySetResult(_command.CanceledCompletionTimeout(_handlerId, new TimeoutException()));
+        }
+
+
 
         #region Messages
         /// <summary>
@@ -217,7 +228,7 @@ namespace ReactiveDomain.Foundation.Commands {
         /// Does not indicate success or failure of command processing.
         /// </summary>
         /// <inheritdoc cref="Message"/>
-        public class AckCommand : Message {
+        public class CommandReceived : Message {
             /// <summary>
             /// MsgId of the Command being acked
             /// </summary>
@@ -231,45 +242,47 @@ namespace ReactiveDomain.Foundation.Commands {
             /// </summary>
             public readonly Guid HandlerId;
 
+            public CommandReceived(Command cmd, Guid handlerId):this(cmd.MsgId,cmd.GetType().FullName, handlerId) {}
             /// <summary>
             /// Constructor
             /// </summary>
             /// <param name="commandId">MsgId of the Command being acked</param>
             /// <param name="commandFullName">Full Type Name of the Command being acked</param>
             /// <param name="handlerId">Id of the Command Handler sending the ack</param>
-            public AckCommand(Guid commandId, string commandFullName, Guid handlerId) {
+            [JsonConstructor]
+            public CommandReceived(Guid commandId, string commandFullName, Guid handlerId) {
                 CommandId = commandId;
                 CommandFullName = commandFullName;
                 HandlerId = handlerId;
             }
         }
-        public class AckTimeout : Message {
+        public class CommandReceiptTimeoutExpired : Message {
             public readonly Guid CommandId;
-            public AckTimeout(
+            public CommandReceiptTimeoutExpired(
                 Guid commandId) {
                 CommandId = commandId;
             }
         }
 
-        public class CompletionTimeout : Message {
+        public class CommandCompletionTimeoutExpired : Message {
             public readonly Guid CommandId;
-            public CompletionTimeout(
+            public CommandCompletionTimeoutExpired(
                 Guid commandId) {
                 CommandId = commandId;
             }
         }
-        public class CommandComplete : Message {
+        public class CommandProcessingCompleted : Message {
             public readonly Guid CommandId;
-            public CommandComplete(
+            public CommandProcessingCompleted(
                 Guid commandId) {
                 CommandId = commandId;
             }
         }
-        public class CommandCancelRequest : Message {
+        public class CommandCancellationRequested : Message {
             public readonly Guid CommandId;
             public readonly string CommandFullName;
             public readonly Guid? HandlerId;
-            public CommandCancelRequest(
+            public CommandCancellationRequested(
                 Guid commandId,
                 string commandFullName,
                 Guid? handlerId) {

@@ -6,32 +6,32 @@ namespace ReactiveDomain.Foundation.Commands {
     public sealed class CommandManager :
         ICommandSender,
         IHandle<CommandResponse>,
-        IHandle<CommandTracker.AckCommand>,
-        IHandle<CommandTracker.AckTimeout>,
-        IHandle<CommandTracker.CompletionTimeout>,
-        IHandle<CommandTracker.CommandComplete>,
+        IHandle<CommandTracker.CommandReceived>,
+        IHandle<CommandTracker.CommandReceiptTimeoutExpired>,
+        IHandle<CommandTracker.CommandCompletionTimeoutExpired>,
+        IHandle<CommandTracker.CommandProcessingCompleted>,
         IDisposable {
         private readonly ConcurrentDictionary<Guid, CommandTracker> _commands;
         private readonly IBus _bus;
-        private readonly TimeSource _timeSource;
+        private readonly ITimeSource _timeSource;
 
         // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
         private readonly LaterService _laterService;
         private readonly InMemoryBus _timeoutBus;
 
-        public CommandManager(IBus bus, TimeSource timeSource = null) {
+        public CommandManager(IBus bus, ITimeSource timeSource = null) {
             _bus = bus;
             _timeSource = timeSource ?? TimeSource.System;
-            _bus.Subscribe<CommandTracker.AckCommand>(this);
+            _bus.Subscribe<CommandTracker.CommandReceived>(this);
             _bus.Subscribe<CommandResponse>(this);
-            _bus.Subscribe<CommandTracker.CommandComplete>(this);
+            _bus.Subscribe<CommandTracker.CommandProcessingCompleted>(this);
 
             _timeoutBus = new InMemoryBus(nameof(_timeoutBus), false);
             _laterService = new LaterService(_timeoutBus, TimeSource.System);
             // ReSharper disable once RedundantTypeArgumentsOfMethod
             _timeoutBus.Subscribe<DelaySendEnvelope>(_laterService);
-            _timeoutBus.Subscribe<CommandTracker.AckTimeout>(this);
-            _timeoutBus.Subscribe<CommandTracker.CompletionTimeout>(this);
+            _timeoutBus.Subscribe<CommandTracker.CommandReceiptTimeoutExpired>(this);
+            _timeoutBus.Subscribe<CommandTracker.CommandCompletionTimeoutExpired>(this);
 
             _laterService.Start();
 
@@ -92,23 +92,23 @@ namespace ReactiveDomain.Foundation.Commands {
                 tracker.Handle(message);
             }
         }
-        public void Handle(CommandTracker.AckCommand message) {
+        public void Handle(CommandTracker.CommandReceived message) {
             if (_commands.TryGetValue(message.MsgId, out var tracker)) {
                 tracker.Handle(message);
             }
         }
-        public void Handle(CommandTracker.AckTimeout message) {
+        public void Handle(CommandTracker.CommandReceiptTimeoutExpired message) {
             if (_commands.TryGetValue(message.MsgId, out var tracker)) {
                 tracker.Handle(message);
             }
         }
-        public void Handle(CommandTracker.CompletionTimeout message) {
+        public void Handle(CommandTracker.CommandCompletionTimeoutExpired message) {
             if (_commands.TryGetValue(message.MsgId, out var tracker)) {
                 tracker.Handle(message);
             }
         }
 
-        public void Handle(CommandTracker.CommandComplete message) {
+        public void Handle(CommandTracker.CommandProcessingCompleted message) {
             _commands.TryRemove(message.MsgId, out var tracker);
             tracker.Dispose();
         }

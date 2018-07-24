@@ -18,7 +18,7 @@ namespace ReactiveDomain.Foundation.Tests.Commands {
         IHandleCommand<TestCommands.Command4>,
         IHandleCommand<TestCommands.WrapException>,
         IHandleCommand<TestCommands.CancelableCommand>,
-        IHandle<CommandTracker.AckCommand>,
+        IHandle<CommandTracker.CommandReceived>,
         IHandle<Fail>,
         IHandle<Success>,
         IHandle<Canceled>,
@@ -41,7 +41,7 @@ namespace ReactiveDomain.Foundation.Tests.Commands {
         private readonly ManualResetEventSlim _releaseCmd = new ManualResetEventSlim();
         public when_using_command_handler() {
             _bus = new InMemoryBus(nameof(when_using_command_handler), false);
-            _bus.Subscribe<CommandTracker.AckCommand>(this);
+            _bus.Subscribe<CommandTracker.CommandReceived>(this);
             _bus.Subscribe<Fail>(this);
             _bus.Subscribe<Success>(this);
             _bus.Subscribe<Canceled>(this);
@@ -279,7 +279,7 @@ namespace ReactiveDomain.Foundation.Tests.Commands {
             throw new CommandTestException();
         }
 
-        void IHandle<CommandTracker.AckCommand>.Handle(CommandTracker.AckCommand message) {
+        void IHandle<CommandTracker.CommandReceived>.Handle(CommandTracker.CommandReceived message) {
             Interlocked.Increment(ref _ackCount);
             _ackId = message.CommandId;
         }

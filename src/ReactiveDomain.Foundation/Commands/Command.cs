@@ -44,21 +44,33 @@ namespace ReactiveDomain.Foundation.Commands {
         /// Create a CommandResponse indicating that this command has succeeded.
         /// </summary>
         public CommandResponse Succeed() {
-            return new Success(MsgId, GetType().FullName,Guid.Empty,CorrelationId, new SourceId(this));
+            return new Success(MsgId, GetType().FullName, Guid.Empty, CorrelationId, new SourceId(this));
         }
 
         /// <summary>
         /// Create a CommandResponse indicating that this command has failed.
         /// </summary>
         public CommandResponse Failed(Exception ex = null) {
-            return new Fail(MsgId, GetType().FullName,Guid.Empty, ex,CorrelationId, new SourceId(this));
+            return new Fail(MsgId, GetType().FullName, Guid.Empty, ex, CorrelationId, new SourceId(this));
         }
 
         /// <summary>
         /// Create a CommandResponse indicating that this command has been canceled.
         /// </summary>
-        public CommandResponse Canceled() {
-            return new Canceled(MsgId, GetType().FullName,Guid.Empty, CorrelationId, new SourceId(this));
+        public CommandResponse Canceled(Guid? handlerGuid = null, Exception ex = null) {
+            return new Canceled(this, handlerGuid ?? Guid.Empty, ex);
+        }
+        /// <summary>
+        /// Create a CommandResponse indicating that this command has been canceled.
+        /// </summary>
+        public CommandResponse CanceledAckTimeout(Guid? handlerGuid = null, Exception ex = null) {
+            return new CanceledAckTimeout(this, handlerGuid ?? Guid.Empty, ex);
+        }
+        /// <summary>
+        /// Create a CommandResponse indicating that this command has been canceled.
+        /// </summary>
+        public CommandResponse CanceledCompletionTimeout(Guid? handlerGuid = null, Exception ex = null) {
+            return new CanceledCompletionTimeout(this, handlerGuid ?? Guid.Empty, ex);
         }
     }
 }

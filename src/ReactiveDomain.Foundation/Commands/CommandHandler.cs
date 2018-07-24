@@ -32,7 +32,7 @@ namespace ReactiveDomain.Foundation.Commands {
 
         public void Handle(T command) {
             if (_disposed) { return; }
-            _bus.Publish(new CommandTracker.AckCommand(command.MsgId, command.GetType().FullName, _id));
+            _bus.Publish(new CommandTracker.CommandReceived(command.MsgId, command.GetType().FullName, _id));
             try {
                 if (command.IsCanceled) {
                     _bus.Publish(command.Canceled());
