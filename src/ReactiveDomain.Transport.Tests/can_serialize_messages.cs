@@ -1,6 +1,8 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Bson;
+using Newtonsoft.Json.Linq;
 using ReactiveDomain.Messaging;
 using ReactiveDomain.Transport.CommandSocket;
 using Xunit;
@@ -38,7 +40,7 @@ namespace ReactiveDomain.Transport.Tests
         {
             var prop1 = "prop1";
             var prop2 = "prop2";
-            var msg = new WoftamEvent(prop1,prop2);
+            var msg = new WoftamEvent(prop1, prop2, CorrelatedMessage.NewRoot());
             MemoryStream ms = new MemoryStream();
             var bs = new BsonDataWriter(ms);
             bs.WriteStartObject();
@@ -113,18 +115,21 @@ namespace ReactiveDomain.Transport.Tests
 
         private const string Prop1 = "prop1";
         private const string Prop2 = "prop2";
-        private readonly WoftamEvent _testEvent =  new WoftamEvent(Prop1,Prop2);
+        private readonly WoftamEvent _testEvent =  new WoftamEvent(Prop1,Prop2, CorrelatedMessage.NewRoot());
     }
-    public class WoftamEvent : CorrelatedMessage
+	public class WoftamEvent : Event
     {
-   
-        public WoftamEvent(string property1, string property2): base(CorrelationId.NewId(), SourceId.NullSourceId())
+		public WoftamEvent(string property1, string property2, CorrelatedMessage source) : base(source)
         {
             Property1 = property1;
             Property2 = property2;
         }
 
-        public string Property1 { get; private set; }
-        public string Property2 { get; private set; }
+		public string Property1 { get;  set; }
+        public string Property2 { get;  set; }
+
+	    // adding this constructor makes it work but this is a workaround not a solution
+	    //[JsonConstructor]
+	    //public WoftamEvent(CorrelationId correlationId, SourceId sourceId) : base(correlationId, sourceId) { }
     }
 }
