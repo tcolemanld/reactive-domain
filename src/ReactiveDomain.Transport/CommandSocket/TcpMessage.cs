@@ -11,7 +11,7 @@ namespace ReactiveDomain.Transport.CommandSocket
     public struct TcpMessage
     {
         private static readonly ILogger Log = LogManager.GetLogger("ReactiveDomain");
-        private static readonly Encoding Encoding = Encoding.UTF8;
+        private static readonly Encoding Encoding = Helper.UTF8NoBom;
         public readonly Type MessageType;
         public readonly ArraySegment<byte> Data;
         public readonly Message WrappedMessage;
